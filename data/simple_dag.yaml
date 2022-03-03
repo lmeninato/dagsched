@@ -1,14 +1,27 @@
+# submit size of cluster
+cluster:
+  cpus: 20
+  ram: 100
+
+# submit user DAGs
 users:
   test_user:
     name: Test
+    arrival_time: 0
     tasks:
       task_1:
         name: Task 1
+        duration: 5
+        cpus: 5
+        ram: 10
       task_2:
         name: Task 2
+        duration: 5
       task_3:
         name: Task 3
+        duration: 5
         dependencies: [task_1, task_2]
       task_4:
         name: Task 4
+        duration: 3
         dependencies: [task_3]
