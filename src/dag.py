@@ -1,13 +1,17 @@
-import plotly.graph_objects as go
 import networkx as nx
+from networkx.drawing.nx_agraph import graphviz_layout
+from networkx.readwrite.json_graph.cytoscape import cytoscape_data
 
 
-class DAGNode:
+class Task:
     def __init__(self):
+        """ """
         pass
 
 
 class DAG:
+    layout = None
+
     def __init__(self, dag):
         self.graph = nx.DiGraph()
         self.name = dag["name"]
@@ -18,70 +22,26 @@ class DAG:
                 for dependency in task["dependencies"]:
                     self.graph.add_edge(dependency, name, color="black")
 
+        self.layout = graphviz_layout(self.graph)
 
-def get_figure_from_dag(G):
-    """
-    from networkx and dash tutorial
-    """
-    pos = nx.spring_layout(G)
+    def to_cyto_node(self, node):
+        id = node["data"]["id"]
+        x, y = self.layout[id]
+        node["data"]["x"] = x
+        node["data"]["y"] = y
+        return node
 
-    # edges trace
-    edge_x = []
-    edge_y = []
-    for edge in G.edges():
-        x0, y0 = pos[edge[0]]
-        x1, y1 = pos[edge[1]]
-        edge_x.append(x0)
-        edge_x.append(x1)
-        edge_x.append(None)
-        edge_y.append(y0)
-        edge_y.append(y1)
-        edge_y.append(None)
+    def render_state(self):
+        """
+        Given events that have taken place, render current graph
+        """
+        cyto = cytoscape_data(self.graph)
+        nodes = cyto["elements"]["nodes"]
+        edges = cyto["elements"]["edges"]
 
-    edge_trace = go.Scatter(
-        x=edge_x,
-        y=edge_y,
-        line=dict(color="black", width=1),
-        hoverinfo="none",
-        showlegend=False,
-        mode="lines",
-    )
+        nodes = [self.to_cyto_node(node) for node in nodes]
 
-    # nodes trace
-    node_x = []
-    node_y = []
-    text = []
-    for node in G.nodes():
-        x, y = pos[node]
-        node_x.append(x)
-        node_y.append(y)
-        text.append(node)
-
-    node_trace = go.Scatter(
-        x=node_x,
-        y=node_y,
-        text=text,
-        mode="markers+text",
-        showlegend=False,
-        hoverinfo="none",
-        marker=dict(color="pink", size=50, line=dict(color="black", width=1)),
-    )
-
-    # layout
-    layout = dict(
-        plot_bgcolor="white",
-        paper_bgcolor="white",
-        margin=dict(t=10, b=10, l=10, r=10, pad=0),
-        xaxis=dict(
-            linecolor="black", showgrid=False, showticklabels=False, mirror=True
-        ),
-        yaxis=dict(
-            linecolor="black", showgrid=False, showticklabels=False, mirror=True
-        ),
-    )
-
-    # figure
-    return go.Figure(data=[edge_trace, node_trace], layout=layout)
+        return nodes + edges
 
 
 if __name__ == "__main__":

@@ -6,16 +6,19 @@ from dash.dependencies import Input, Output
 import dash_cytoscape as cyto
 import dash_html_components as html
 
+# Load extra layouts
+cyto.load_extra_layouts()
+
 app = dash.Dash(__name__)
 
 nodes = [
     {
-        "data": {"id": short, "label": label},
+        "data": {"id": short, "label": label, "state": state},
         "position": {"x": 20 * lat, "y": -20 * longitude},
     }
-    for short, label, longitude, lat in (
-        ("la", "Los Angeles", 34.03, -118.25),
-        ("nyc", "New York", 40.71, -74),
+    for short, label, state, longitude, lat in (
+        ("la", "Los Angeles", "CA", 34.03, -118.25),
+        ("nyc", "New York", "NY", 40.71, -74),
     )
 ]
 

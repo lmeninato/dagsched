@@ -5,7 +5,7 @@ from src.read_graph import read_yaml
 
 class TestSimpleDag(unittest.TestCase):
 
-    data = read_yaml("data/simple_dag.yaml")
+    data = read_yaml("data/simple_dag.yml")
     tasks = data["users"]["test_user"]
     dag = DAG(tasks)
 
