@@ -20,7 +20,9 @@ def parse_contents(contents, filename, date):
     decoded = base64.b64decode(content_string)
 
     try:
-        logging.info(f"filename: {filename}, date: {date}")
+        logging.info(
+            f"content_type: {content_type}, filename: {filename}, date: {date}"
+        )
         decoded_content = io.StringIO(decoded.decode("utf-8"))
         data = yaml.safe_load(decoded_content.read())
         return filename, data
