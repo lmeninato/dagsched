@@ -5,7 +5,7 @@ cluster:
 
 # submit user DAGs
 users:
-  test user:
+  test_user:
     name: Test
     arrival_time: 0
     tasks:
