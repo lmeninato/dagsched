@@ -14,23 +14,12 @@ logging.basicConfig(
     level=logging.DEBUG,
 )
 
-
 app = dash.Dash(__name__)
 app.config.suppress_callback_exceptions = True
 
 cyto.load_extra_layouts()
 
 specs = read_dag_specs("data")
-elements = []  # dag.render_state()
-
-default_stylesheet = [
-    {
-        "selector": "node",
-        "style": {"background-color": "BFD7B5", "label": "data(label)"},
-    },
-    {"selector": "edge", "style": {"line-color": "#A3C4BC"}},
-]
-
 
 app.layout = html.Div(
     [
@@ -57,8 +46,8 @@ app.layout = html.Div(
             id="input-file-dropdown",
         ),
         dcc.Dropdown(
-            list(specs["simple_dag.yml"]["users"].keys()),
-            list(specs["simple_dag.yml"]["users"].keys())[0],
+            options=list(specs["simple_dag.yml"]["users"].keys()),
+            value=list(specs["simple_dag.yml"]["users"].keys())[0],
             id="user-dropdown",
         ),
         cyto.Cytoscape(
@@ -70,9 +59,27 @@ app.layout = html.Div(
                 "rankDir": "LR",
             },
             autoRefreshLayout=True,
-            stylesheet=default_stylesheet,
-            style={"width": "50vw", "height": "50vh"},
-            elements=elements,
+            stylesheet=[
+                {
+                    "selector": "node",
+                    "style": {
+                        "background-color": "BFD7B5",
+                        "label": "data(label)",
+                        "text-wrap": "wrap",
+                        "text-valign": "bottom",
+                        "text-halign": "center",
+                    },
+                },
+                {"selector": "edge", "style": {"line-color": "#A3C4BC"}},
+            ],
+            style={
+                "width": "50vw",
+                "height": "75vh",
+                "font-size": 8,
+                "margin": "25px",
+                "border": "grey solid",
+            },
+            elements=[],
         ),
     ]
 )
@@ -112,6 +119,43 @@ def update_shown_dag(input_file, input_user):
     user_tasks = specs[input_file]["users"][input_user]
     dag = DAG(user_tasks)
     return dag.render_state()
+
+
+@app.callback(
+    Output("cytoscape-elements-callbacks", "stylesheet"),
+    [
+        Input("cytoscape-elements-callbacks", "stylesheet"),
+        Input("cytoscape-elements-callbacks", "mouseoverNodeData"),
+    ],
+)
+def displayTapNodeData(stylesheet, data):
+    style = {
+        "selector": "node",
+        "style": {
+            "background-color": "BFD7B5",
+            "label": "data(label)",
+            "text-wrap": "wrap",
+            "text-valign": "bottom",
+            "text-halign": "center",
+            "border-color": "purple",
+            "border-width": 2,
+            "border-opacity": 1,
+            "color": "#B10DC9",
+            "text-opacity": 1,
+            "font-size": 8,
+            "z-index": 9999,
+        },
+    }
+
+    if data:
+        base_style = stylesheet[:2]
+        style["selector"] = f"node[label = \"{data['label']}\"]"
+        style["style"][
+            "label"
+        ] = f"{data['label']}\nDuration: {data['duration']}\nCPUs: {data['cpus']}\nRAM: {data['ram']}"  # noqa
+        stylesheet = base_style + [style]
+
+    return stylesheet
 
 
 app.run_server(debug=True)

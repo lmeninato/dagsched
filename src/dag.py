@@ -4,9 +4,29 @@ from networkx.readwrite.json_graph.cytoscape import cytoscape_data
 
 
 class Task:
-    def __init__(self):
-        """ """
-        pass
+    required = ["label", "duration"]
+    optional = {"cpus": 1, "ram": 1}
+
+    def __init__(self, props):
+        """
+        Build task
+        """
+        self.validate(props)
+        self.props = self.add_defaults(props)
+
+    def validate(self, props):
+        for req in self.required:
+            if req not in props:
+                raise ValueError(f"Missing {req} in task definition")
+
+    def add_defaults(self, props):
+        for opt, val in self.optional.items():
+            if opt not in props:
+                props[opt] = val
+        return props
+
+    def get_props(self):
+        return self.props
 
 
 class DAG:
@@ -17,9 +37,11 @@ class DAG:
         self.name = dag["name"]
 
         for name, task in dag["tasks"].items():
-            self.graph.add_node(name, **task)
-            if "dependencies" in task:
-                for dependency in task["dependencies"]:
+            task = Task(task)
+            task_props = task.get_props()
+            self.graph.add_node(name, **task_props)
+            if "dependencies" in task_props:
+                for dependency in task_props["dependencies"]:
                     self.graph.add_edge(dependency, name, color="black")
 
         self.layout = graphviz_layout(self.graph)
