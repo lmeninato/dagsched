@@ -13,10 +13,10 @@ class TestSimpleDag(unittest.TestCase):
         self.assertEqual(self.dag.name, "Test")
 
     def test_dag_nodes(self):
-        self.assertEqual(len(self.dag.graph.nodes()), 4)
+        self.assertEqual(len(self.dag.nodes), 4)
 
     def test_dag_edges(self):
-        self.assertEqual(len(self.dag.graph.edges()), 3)
+        self.assertEqual(len(self.dag.edges), 3)
 
 
 if __name__ == "__main__":
