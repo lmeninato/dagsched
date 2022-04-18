@@ -57,7 +57,7 @@ class DAG:
         node = {"data": props}
         self.nodes.append(node)
 
-        if "dependencies" in props:
+        if "dependencies" in props and props["dependencies"]:
             for dependency in props["dependencies"]:
                 edge = {"data": {"source": dependency, "target": name}}
                 self.edges.append(edge)

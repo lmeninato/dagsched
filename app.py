@@ -1,12 +1,13 @@
 from src.dag import DAG
 from src.read_graph import read_dag_specs, parse_contents, read_yaml
 
-# import dash
 from dash import dcc
 
 import dash_daq as daq
-from dash import html
+from dash import html, MATCH, ALL
 from dash_extensions.enrich import DashProxy, MultiplexerTransform, Input, Output, State
+from dash.exceptions import PreventUpdate
+
 
 import dash_cytoscape as cyto
 import logging
@@ -137,7 +138,171 @@ def render_input_ui(value):
 )
 def render_custom_user_tasks_ui(num_users):
     logging.info("todo: render custom user tasks UI")
-    pass
+
+    ui_elements = [
+        daq.NumericInput(
+            id="input-cluster-cpus",
+            label="Input Number of CPUs:",
+            value=10,
+        ),
+        daq.NumericInput(
+            id="input-cluster-ram",
+            label="Input GBs of RAMs:",
+            value=20,
+        ),
+    ]
+
+    for i in range(num_users):
+        user_task_i = create_user_task(i)
+        ui_elements += user_task_i
+
+    return ui_elements + [
+        html.Button("Submit", id="submit-custom-dag", n_clicks=0),
+    ]
+
+
+@app.callback(
+    Output("session-cluster", "data"),
+    Output("session-dags", "data"),
+    Output("session-users", "data"),
+    [
+        Input("submit-custom-dag", "n_clicks"),
+        Input("input-cluster-cpus", "value"),
+        Input("input-cluster-ram", "value"),
+    ],
+    State({"type": "input-user-name", "user": ALL}, "value"),
+    State({"type": "input-arrival", "user": ALL}, "value"),
+    State({"type": "input-num-tasks", "user": ALL}, "value"),
+    State({"type": "input-task", "subtype": ALL, "user": ALL, "task": ALL}, "value"),
+    prevent_initial_call=True,
+)
+def handle_submit_custom_dag(n_clicks, cpus, ram, users, arrivals, tasks, task_form):
+    if n_clicks is None or n_clicks < 1:
+        raise PreventUpdate
+
+    logging.info("submit custom dag triggered!")
+    logging.info(f"n_clicks: {n_clicks}")
+    logging.info(f"user_name: {users}")
+    logging.info(f"arrival: {arrivals}")
+    logging.info(f"num_tasks: {tasks}")
+    logging.info(f"task_form: {task_form}")
+
+    if len(task_form) != (sum(tasks) * 4):
+        logging.error(f"Error with task form: {task_form}")
+        raise PreventUpdate
+    index = 0
+
+    cluster = {"cpus": cpus, "ram": ram}
+    data = {}
+    cluster_users = []
+
+    for user, arrival, num_tasks in zip(users, arrivals, tasks):
+        index, data[user] = parse_tasks(index, user, arrival, num_tasks, task_form)
+        cluster_users.append({"user": user, "name": user})
+
+    return cluster, data, cluster_users
+
+
+def parse_tasks(i, user, arrival, num_tasks, task_form):
+    dag = {"name": user, "arrival_time": arrival, "tasks": {}}
+
+    for j in range(num_tasks):
+        form_elements = task_form[i : (i + 4)]
+        i += 4
+
+        duration, cpus, ram, deps = form_elements
+        dag["tasks"][f"task_{j}"] = {
+            "label": f"task_{j}",
+            "duration": duration,
+            "cpus": cpus,
+            "ram": ram,
+            "dependencies": deps,
+        }
+
+    dag = DAG(dag)
+    return i, dag
+
+
+@app.callback(
+    Output({"type": "user-tasks-form", "user": MATCH}, "children"),
+    Input({"type": "input-num-tasks", "user": MATCH}, "value"),
+    State({"type": "user-tasks-form", "user": MATCH}, "id"),
+)
+def create_user_task_callbacks(num_tasks, user_form):
+    user_id = user_form["user"]
+    logging.info(f"Creating {num_tasks} tasks for user {user_id}")
+
+    result = []
+    for task_num in range(num_tasks):
+        ui = html.Div(
+            [
+                html.H2(f"Enter details for task_{task_num}:"),
+                daq.NumericInput(
+                    id={
+                        "type": "input-task",
+                        "subtype": "duration",
+                        "user": user_id,
+                        "task": task_num,
+                    },
+                    label="Input Task Duration:",
+                    value=5,
+                ),
+                daq.NumericInput(
+                    id={
+                        "type": "input-task",
+                        "subtype": "cpus",
+                        "user": user_id,
+                        "task": task_num,
+                    },
+                    label="Input Task Required CPUs:",
+                    value=1,
+                ),
+                daq.NumericInput(
+                    id={
+                        "type": "input-task",
+                        "subtype": "ram",
+                        "user": user_id,
+                        "task": task_num,
+                    },
+                    label="Input Task Required RAM:",
+                    value=1,
+                ),
+                dcc.Dropdown(
+                    id={
+                        "type": "input-task",
+                        "subtype": "dependencies",
+                        "user": user_id,
+                        "task": task_num,
+                    },
+                    options=[f"task_{i}" for i in range(task_num)],
+                    placeholder="Please Select Task Dependencies:",
+                    multi=True,
+                ),
+            ]
+        )
+        result.append(ui)
+    return result
+
+
+def create_user_task(i):
+    return [
+        dcc.Input(
+            id={"type": "input-user-name", "user": i},
+            type="text",
+            placeholder="Input User Name:",
+        ),
+        daq.NumericInput(
+            id={"type": "input-arrival", "user": i},
+            label="Input Arrival Time:",
+            value=0,
+        ),
+        daq.NumericInput(
+            id={"type": "input-num-tasks", "user": i},
+            label=f"Input Number of tasks for User {i}",
+            value=2,
+        ),
+        html.Div(id={"type": "user-tasks-form", "user": i}),
+    ]
 
 
 @app.callback(
