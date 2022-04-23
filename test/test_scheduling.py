@@ -39,7 +39,7 @@ class TestFCFS(unittest.TestCase):
         self.assertEqual(self.scheduler.time, 16)
 
     def test_scheduling_history(self):
-        self.assertEqual(len(self.scheduler.history.times), 5)
+        self.assertEqual(len(self.scheduler.history.times), 6)
 
         messages, dags, utilization = self.scheduler.history.get_events_at_time_t(0)
         self.assertEqual(utilization["cpus"], 12)
@@ -50,6 +50,11 @@ class TestFCFS(unittest.TestCase):
         self.assertEqual(utilization["cpus"], 0)
         self.assertEqual(len(list(dags.keys())), 2)
         self.assertTrue(len(messages))
+
+    def test_scheduling_run(self):
+        self.scheduler = FCFS(data["cluster"], data["users"], users, deserialize=False)
+        self.scheduler.run()
+        self.assertEqual(self.scheduler.time, 16)
 
 
 if __name__ == "__main__":

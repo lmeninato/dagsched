@@ -1,3 +1,9 @@
+from src.scheduling import FCFS
+from src.scheduling_ui import (
+    get_scheduling_output,
+    render_scheduling_messages,
+    render_utilization,
+)
 from src.dag import DAG
 from src.read_graph import read_dag_specs, parse_contents, read_yaml
 
@@ -22,6 +28,8 @@ logging.basicConfig(
 # app = dash.Dash(__name__)
 app = DashProxy(transforms=[MultiplexerTransform()])
 app.config.suppress_callback_exceptions = True
+
+SCHEDULER = None
 
 cyto.load_extra_layouts()
 
@@ -51,6 +59,11 @@ app.layout = html.Div(
                 dcc.Tab(
                     label="Scheduling Visualization",
                     children=[
+                        dcc.Dropdown(
+                            id="scheduler-dropdown", options=["FCFS"], value=["FCFS"]
+                        ),
+                        html.Button(id="run-scheduler", n_clicks=0, children="Run"),
+                        html.Div(id="scheduling-output"),
                         dcc.Dropdown(id="user-dropdown"),
                         cyto.Cytoscape(
                             id="cytoscape-elements-callbacks",
@@ -92,6 +105,57 @@ app.layout = html.Div(
         ),
     ]
 )
+
+
+@app.callback(
+    Output("scheduling-output", "children"),
+    Input("run-scheduler", "n_clicks"),
+    State("scheduler-dropdown", "value"),
+    State("session-dags", "data"),
+    State("session-users", "data"),
+    State("session-cluster", "data"),
+    prevent_initial_call=True,
+)
+def perform_scheduling(n_clicks, scheduler_type, dags, users, cluster):
+    global SCHEDULER
+
+    scheduler_type = scheduler_type[0]
+    try:
+        if scheduler_type == "FCFS":
+            SCHEDULER = FCFS(cluster, dags, users)
+        else:
+            logging.error("Invalid scheduler selected")
+            raise ValueError
+
+        if SCHEDULER:
+            SCHEDULER.run()
+    except Exception:
+        SCHEDULER = None
+
+    return get_scheduling_output(SCHEDULER)
+
+
+@app.callback(
+    Output("session-dags", "data"),
+    Output("scheduling-messages", "children"),
+    Output("scheduling-utilization", "children"),
+    Input("scheduling-times-dropdown", "value"),
+    State("session-dags", "data"),
+    prevent_initial_call=True,
+)
+def render_state_from_scheduler_history(time, dags):
+    logging.info(f"Selected time is {time}")
+
+    if SCHEDULER is None:
+        return dags, None, None
+
+    messages, dags, utilization = SCHEDULER.get_history(time)
+
+    return (
+        dags,
+        render_scheduling_messages(messages),
+        render_utilization(SCHEDULER.cluster, utilization),
+    )
 
 
 @app.callback(Output("input-ui", "children"), [Input("input-dropdown", "value")])

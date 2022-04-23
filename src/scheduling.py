@@ -48,6 +48,11 @@ class Scheduler:
         self.history = SchedulerHistory()
         self.running = {}
 
+    def run(self):
+        finished = False
+        while not finished:
+            finished = self.perform_scheduling_round()
+
     def perform_scheduling_round():
         """
         virtual function, must be overriden
@@ -57,8 +62,13 @@ class Scheduler:
     def get_history(self, t):
         return self.history.get_events_at_time_t(t)
 
-    def store_history(self):
-        self.history.add_event(self.time, self.messages, self.dags, self.utilization)
+    def store_history(self, initial=False):
+        if initial:
+            self.history.add_event(-1, self.messages, self.dags, self.utilization)
+        else:
+            self.history.add_event(
+                self.time, self.messages, self.dags, self.utilization
+            )
 
     def get_ready_tasks(self):
         tasks = []
@@ -181,6 +191,10 @@ class FCFS(Scheduler):
     def __init__(self, cluster, dags, users, deserialize=True):
         super().__init__(cluster, dags, users, deserialize)
         self.ready = deque()
+        self.store_history(initial=True)
+
+    def run(self):
+        super().run()
 
     def perform_scheduling_round(self):
         """
@@ -228,8 +242,8 @@ class FCFS(Scheduler):
             else:
                 break
 
-    def store_history(self):
-        return super().store_history()
+    def store_history(self, initial=False):
+        return super().store_history(initial)
 
     def set_next_event_time(self):
         return super().set_next_event_time()

@@ -40,7 +40,7 @@ class Task:
                 props[opt] = val
         props["id"] = self.id
         if self.status:
-            props["ready"] = self.status
+            props["status"] = self.status
         return props
 
     def get_props(self):
@@ -62,8 +62,10 @@ class DAG:
         self.tasks = {}
 
         if deserialize:
-            self.nodes = dag["nodes"]
-            self.edges = dag["edges"]
+            for node in dag["nodes"]:
+                data = node["data"]
+                name = data["id"]
+                self.add_task(name, data)
             return
         for name, task in dag["tasks"].items():
             self.add_task(name, task)
