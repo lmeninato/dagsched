@@ -6,7 +6,7 @@ cluster:
 # submit user DAGs
 users:
   test_user:
-    name: Test
+    name: Test User 1
     arrival_time: 0
     tasks:
       task_1:
@@ -26,7 +26,7 @@ users:
         duration: 3
         dependencies: [task_3]
   test_user2:
-    name: Test 2
+    name: Test User 2
     arrival_time: 0
     tasks:
       task_1:

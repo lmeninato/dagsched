@@ -1,19 +1,33 @@
 import orjson
 from dataclasses import dataclass
+from enum import Enum
+
+
+class TaskStatus(Enum):
+    READY = 0
+    FINISHED = 1
+    BLOCKED = 2
+    RUNNING = 3
+    PREEMPTED = 4
 
 
 @dataclass
 class Task:
     required = ["label", "duration"]
     optional = {"cpus": 1, "ram": 1}
+    status = None
+    start = None
+    end = None
+    runtime = 0
 
-    def __init__(self, name, props):
+    def __init__(self, name, props, status=None):
         """
         Build task
         """
         self.id = name
         self.validate(props)
         self.props = self.add_defaults(props)
+        self.status = status
 
     def validate(self, props):
         for req in self.required:
@@ -25,6 +39,8 @@ class Task:
             if opt not in props:
                 props[opt] = val
         props["id"] = self.id
+        if self.status:
+            props["ready"] = self.status
         return props
 
     def get_props(self):
@@ -43,6 +59,7 @@ class DAG:
         self.edges = []
         self.name = dag["name"]
         self.arrival_time = dag["arrival_time"]
+        self.tasks = {}
 
         if deserialize:
             self.nodes = dag["nodes"]
@@ -53,6 +70,8 @@ class DAG:
 
     def add_task(self, name, task):
         task = Task(name, task)
+        self.tasks[name] = task
+
         props = task.get_props()
         node = {"data": props}
         self.nodes.append(node)

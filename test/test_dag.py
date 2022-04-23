@@ -10,7 +10,7 @@ class TestSimpleDag(unittest.TestCase):
     dag = DAG(tasks)
 
     def test_dag_constructor(self):
-        self.assertEqual(self.dag.name, "Test")
+        self.assertEqual(self.dag.name, "Test User 1")
 
     def test_dag_nodes(self):
         self.assertEqual(len(self.dag.nodes), 4)
