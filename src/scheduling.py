@@ -1,4 +1,5 @@
 from dag import DAG, TaskStatus
+from mlfq import MultiLevelFeedbackQueue
 from collections import deque
 from copy import deepcopy
 
@@ -120,13 +121,16 @@ class Scheduler:
 
         cpus, ram = task.props["cpus"], task.props["ram"]
 
-        logging.info(f"Scheduled {user} task {label} with {cpus} cpus and {ram} ram")
-        self.messages.append(
+        self.logged_message(
             f"Scheduled {user} task {label} with {cpus} cpus and {ram} ram"
         )
 
         task.status = TaskStatus.RUNNING
-        task.start = self.time
+        if not task.prev_runtime:
+            # store initial run time
+            task.start = self.time
+        # in case of preemption, need to store last time task was running
+        task.prev_runtime = self.time
         self.utilization["cpus"] += cpus
         self.utilization["ram"] += ram
 
@@ -138,11 +142,15 @@ class Scheduler:
         # need to loop over a copy of the dict to mutate the original dynamically
         for key, task in self.running.copy().items():
             user, label = key
-            if task.start + task.props["duration"] >= self.time:
+            # update run time for task
+            task.runtime += self.time - task.prev_runtime
+            # has task run long enough?
+            if task.runtime >= task.props["duration"]:
                 task.status = TaskStatus.FINISHED
                 task.end = self.time
-                logging.info(f"Finished {user} task {label} at {self.time}")
-                self.messages.append(f"Finished {user} task {label} at {self.time}")
+                self.logged_message(
+                    f"Finished user: {user} task: {label} at time={self.time}"
+                )
                 self.utilization["cpus"] -= task.props["cpus"]
                 self.utilization["ram"] -= task.props["ram"]
                 del self.running[key]
@@ -186,6 +194,41 @@ class Scheduler:
         self.time = next_time
         return False
 
+    def logged_message(self, message):
+        logging.info(message)
+        self.messages.append(message)
+
+    def preempt_task(self, task_key):
+        task = self.running[task_key]
+        user, label = task_key
+        self.logged_message(
+            f"Pre-empting user {user} task {label} with priority: {task.priority}"
+        )
+
+        # remove task from running set
+        del self.running[task_key]
+
+        task.status = TaskStatus.PREEMPTED
+        task.runtime = self.time - task.start
+        # should we increase priority of preempted tasks?
+
+        self.utilization["cpus"] -= task.props["cpus"]
+        self.utilization["ram"] -= task.props["ram"]
+
+    def preempt_tasks(self, task_keys):
+        for task_key in task_keys:
+            self.preempt_task(task_key)
+
+    def task_has_utilization(self, task, utilization):
+        available_cpus = task.props["cpus"] + (
+            self.cluster["cpus"] - utilization["cpus"]
+        )
+        available_ram = task.props["ram"] + (self.cluster["ram"] - utilization["ram"])
+
+        return (
+            available_cpus >= task.props["cpus"] and available_ram >= task.props["ram"]
+        )
+
 
 class FCFS(Scheduler):
     def __init__(self, cluster, dags, users, deserialize=True):
@@ -208,7 +251,10 @@ class FCFS(Scheduler):
 
         for user, label, task in self.get_ready_tasks():
             self.ready.appendleft((user, label, task))
-            self.messages.append(f"Added {user} task {label} to ready queue")
+            duration = task.props["duration"]
+            super().logged_message(
+                f"Added {user} task {label} to ready queue with duration {duration}"
+            )
 
         self.schedule_tasks()
 
@@ -249,6 +295,108 @@ class FCFS(Scheduler):
         return super().set_next_event_time()
 
 
+class PreemptivePriorityScheduler(Scheduler):
+    def __init__(self, cluster, dags, users, deserialize=True):
+        super().__init__(cluster, dags, users, deserialize)
+        for _, dag in self.dags.items():
+            for _, task in dag.tasks.items():
+                if task.priority is None:
+                    task.priority = 0
+        self.ready = MultiLevelFeedbackQueue()
+        self.store_history(initial=True)
+
+    def run(self):
+        super().run()
+
+    def perform_scheduling_round(self):
+        """
+        Preemptive Priority Scheduling
+            -> put all ready tasks in multilevel feedback queue
+            -> run tasks from queue until resources are exhausted
+                -> schedule high priority tasks first
+                -> produce event message as each task transitions from ready to running
+            -> store state of dags and cluster
+        """
+        super().remove_finished_tasks()
+
+        for user, label, task in super().get_ready_tasks():
+            # unlike FCFS, now we need to track priority
+            self.ready.put((user, label, task), task.priority)
+            super().logged_message(
+                f"Added {user} task {label} "
+                f"to ready queue with priority {task.priority} "
+                f"and duration {task.props['duration']}"
+            )
+
+        self.schedule_tasks()
+
+        super().store_history(initial=False)
+        finished = super().set_next_event_time()
+        return finished
+
+    def schedule_task_with_preemption(self, user, label, task):
+        """
+        To schedule task into the cluster
+            - does the task fit, if so schedule and return
+            - can we pre-empt lower prio tasks and fit this task?
+                - if so change those tasks' status to "pre-empted"
+                - remove those tasks from the set of running tasks
+                    - adjust utilization accordingly
+                - add higher prio task to set of running tasks
+        """
+        prio = task.priority
+
+        possible_utilization = {"cpus": 0, "ram": 0}
+        possibly_preempted = set()
+
+        for running_item in self.get_running_tasks_by_priority():
+            running_prio, (running_user, running_label), running_task = running_item
+            if prio <= running_prio:
+                return False
+            cpus, ram = running_task.props["cpus"], running_task.props["ram"]
+            possible_utilization["cpus"] += cpus
+            possible_utilization["ram"] += ram
+            possibly_preempted.add((running_user, running_label))
+
+            if super().task_has_utilization(task, possible_utilization):
+                logging.info(f"Preempting tasks: {possibly_preempted}")
+                super().preempt_tasks(possibly_preempted)
+                super().schedule_task(user, label, task)
+                return True
+
+        return False
+
+    def get_running_tasks_by_priority(self):
+        running_tasks = []
+        for key, task in self.running.items():
+            running_tasks.append((task.priority, key, task))
+        return sorted(running_tasks)
+
+    def schedule_tasks(self):
+        """
+        Also see FCFS docstring
+        """
+        if not self.ready.size:
+            return
+
+        while self.ready.size:
+            user, label, task = self.ready.peek()
+            task_scheduled = super().schedule_task(user, label, task)
+            if task_scheduled:
+                # task scheduled successfully -> consume item from queue
+                self.ready.get()
+                continue
+
+            task_scheduled = self.schedule_task_with_preemption(user, label, task)
+            if task_scheduled:
+                # task scheduled successfully -> consume item from queue
+                self.ready.get()
+                continue
+
+            # cluster is full or task failed to get scheduled :(
+            break
+
+
 if __name__ == "__main__":
     """
     for testing:
@@ -265,9 +413,11 @@ if __name__ == "__main__":
         level=logging.DEBUG,
     )
 
-    data = read_yaml("data/simple_dag.yml")
+    data = read_yaml("data/simple_prio_dag.yml")
     tasks = data["users"]["test_user"]
     dag = DAG(tasks)
     users = list(data["users"].keys())
-    scheduler = FCFS(data["cluster"], data["users"], users, deserialize=False)
+    scheduler = PreemptivePriorityScheduler(
+        data["cluster"], data["users"], users, deserialize=False
+    )
     scheduler.run()
