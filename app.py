@@ -35,6 +35,42 @@ cyto.load_extra_layouts()
 
 specs = read_dag_specs("data")
 
+base_cyto_stylesheet = [
+    {
+        "selector": "node",
+        "style": {
+            "background-color": "BFD7B5",  # grey
+            "border-color": "#000000",  # black
+            "border-width": 2,
+            "border-opacity": 1,
+            "label": "data(label)",
+            "text-wrap": "wrap",
+            "text-valign": "bottom",
+            "text-halign": "center",
+        },
+    },
+    {
+        "selector": '[status = "RUNNING"]',
+        "style": {"background-color": "#00FF00", "border-color": "#000000"},  # green
+    },
+    {
+        "selector": '[status = "READY"]',
+        "style": {"background-color": "#FFFF00", "border-color": "#000000"},  # yellow
+    },
+    {
+        "selector": '[status = "BLOCKED"]',
+        "style": {"background-color": "#FF0000", "border-color": "#000000"},  # red
+    },
+    {
+        "selector": '[status = "FINISHED"]',
+        "style": {"background-color": "#FFFFFF", "border-color": "#000000"},  # white
+    },
+    {
+        "selector": "edge",
+        "style": {"line-color": "#A3C4BC"},
+    },
+]
+
 app.layout = html.Div(
     [
         html.P("DAG Scheduling Visualization"),
@@ -74,22 +110,7 @@ app.layout = html.Div(
                                 "rankDir": "LR",
                             },
                             autoRefreshLayout=True,
-                            stylesheet=[
-                                {
-                                    "selector": "node",
-                                    "style": {
-                                        "background-color": "BFD7B5",
-                                        "label": "data(label)",
-                                        "text-wrap": "wrap",
-                                        "text-valign": "bottom",
-                                        "text-halign": "center",
-                                    },
-                                },
-                                {
-                                    "selector": "edge",
-                                    "style": {"line-color": "#A3C4BC"},
-                                },
-                            ],
+                            stylesheet=base_cyto_stylesheet,
                             style={
                                 "width": "50vw",
                                 "height": "75vh",
@@ -446,7 +467,7 @@ def update_scheduling_tasks_from_sample(path):
 @app.callback(
     Output("cytoscape-elements-callbacks", "elements"),
     Input("user-dropdown", "value"),
-    State("session-dags", "data"),
+    Input("session-dags", "data"),
     State("session-users", "data"),
 )
 def update_shown_dag(value, dags, users):
@@ -491,12 +512,13 @@ def displayTapNodeData(stylesheet, data):
     }
 
     if data:
-        base_style = stylesheet[:2]
+        base_stylesheet = base_cyto_stylesheet
         style["selector"] = f"node[label = \"{data['label']}\"]"
         style["style"][
             "label"
         ] = f"{data['label']}\nDuration: {data['duration']}\nCPUs: {data['cpus']}\nRAM: {data['ram']}"  # noqa
-        stylesheet = base_style + [style]
+
+        stylesheet = base_stylesheet + [style]
 
     return stylesheet
 

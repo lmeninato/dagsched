@@ -39,11 +39,11 @@ class Task:
             if opt not in props:
                 props[opt] = val
         props["id"] = self.id
-        if self.status:
-            props["status"] = self.status
         return props
 
     def get_props(self):
+        if self.status and isinstance(self.status, TaskStatus):
+            self.props["status"] = self.status.name
         return self.props
 
     def toJSON(self):
@@ -65,6 +65,11 @@ class DAG:
             for node in dag["nodes"]:
                 data = node["data"]
                 name = data["id"]
+                if name in dag["tasks"]:
+                    status = dag["tasks"][name]["status"]
+                    if status:
+                        status = TaskStatus(status).name
+                    data["status"] = status
                 self.add_task(name, data)
             return
         for name, task in dag["tasks"].items():
@@ -87,6 +92,7 @@ class DAG:
         """
         Given events that have taken place, render current graph
         """
+
         return self.nodes + self.edges
 
     def toJSON(self):

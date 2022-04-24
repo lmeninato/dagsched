@@ -270,6 +270,4 @@ if __name__ == "__main__":
     dag = DAG(tasks)
     users = list(data["users"].keys())
     scheduler = FCFS(data["cluster"], data["users"], users, deserialize=False)
-    finished = False
-    while not finished:
-        finished = scheduler.perform_scheduling_round()
+    scheduler.run()
