@@ -1,4 +1,5 @@
 from dag import DAG, TaskStatus
+from mlfq import MultiLevelFeedbackQueue
 from collections import deque
 from copy import deepcopy
 
@@ -186,6 +187,34 @@ class Scheduler:
         self.time = next_time
         return False
 
+    def preempt_task(self, task_key):
+        task = self.running[task_key]
+        user, label = task_key
+        self.messages.append(
+            f"Pre-empting user {user} task {label} with priority: {task.priority}"
+        )
+
+        # remove task from running set
+        del self.running[task_key]
+
+        task.status = TaskStatus.PREEMPTED
+        task.runtime = self.time - task.start
+        # should we increase priority of preempted tasks?
+
+        self.utilization["cpus"] -= task.props["cpus"]
+        self.utilization["ram"] -= task.props["ram"]
+
+    def preempt_tasks(self, task_keys):
+        for task_key in task_keys:
+            self.preempt_task(task_key)
+
+    @staticmethod
+    def task_has_utilization(task, utilization):
+        return (
+            utilization["cpus"] >= task.props["cpus"]
+            and utilization["ram"] >= task.props["ram"]
+        )
+
 
 class FCFS(Scheduler):
     def __init__(self, cluster, dags, users, deserialize=True):
@@ -247,6 +276,106 @@ class FCFS(Scheduler):
 
     def set_next_event_time(self):
         return super().set_next_event_time()
+
+
+class PreemptivePriorityScheduler(Scheduler):
+    def __init__(self, cluster, dags, users, deserialize=True):
+        super().__init__(cluster, dags, users, deserialize)
+        for _, dag in self.dags.items():
+            for task in dag.tasks:
+                if task.priority is None:
+                    task.priority = 0
+        self.ready = MultiLevelFeedbackQueue()
+        self.store_history(initial=True)
+
+    def run(self):
+        super().run()
+
+    def perform_scheduling_round(self):
+        """
+        Preemptive Priority Scheduling
+            -> put all ready tasks in multilevel feedback queue
+            -> run tasks from queue until resources are exhausted
+                -> schedule high priority tasks first
+                -> produce event message as each task transitions from ready to running
+            -> store state of dags and cluster
+        """
+        super().remove_finished_tasks()
+
+        for user, label, task in super().get_ready_tasks():
+            # unlike FCFS, now we need to track priority
+            self.ready.put((user, label, task), task.priority)
+            self.messages.append(
+                f"Added {user} task {label} "
+                f"to ready queue with priority {task.priority}"
+            )
+
+        self.schedule_tasks()
+
+        super().store_history(initial=False)
+        finished = super().set_next_event_time()
+        return finished
+
+    def schedule_task_with_preemption(self, user, label, task):
+        """
+        To schedule task into the cluster
+            - does the task fit, if so schedule and return
+            - can we pre-empt lower prio tasks and fit this task?
+                - if so change those tasks' status to "pre-empted"
+                - remove those tasks from the set of running tasks
+                    - adjust utilization accordingly
+                - add higher prio task to set of running tasks
+        """
+        prio = task.priority
+
+        possible_utilization = {"cpus": 0, "ram": 0}
+        possibly_preempted = set()
+
+        for running_item in self.get_running_tasks_by_priority():
+            running_prio, (running_user, running_label, running_task) = running_item
+            if prio <= running_prio:
+                return False
+            cpus, ram = running_task.props["cpus"], running_task.props["ram"]
+            possible_utilization["cpus"] += cpus
+            possible_utilization["ram"] += ram
+            possibly_preempted.add((running_user, running_label))
+
+            if Scheduler.task_has_utilization(task, possible_utilization):
+                super().preempt_tasks(possibly_preempted)
+                super().schedule_task(user, label, task)
+                return True
+
+        return False
+
+    def get_running_tasks_by_priority(self):
+        running_tasks = []
+        for key, task in self.running.items():
+            running_tasks.append((task.priority, key, task))
+        return sorted(running_tasks)
+
+    def schedule_tasks(self):
+        """
+        Also see FCFS docstring
+        """
+        if not self.ready.size:
+            return
+
+        while self.ready.size:
+            user, label, task = self.ready.peek()
+            task_scheduled = super().schedule_task(user, label, task)
+            if task_scheduled:
+                # task scheduled successfully -> consume item from queue
+                self.ready.get()
+                continue
+
+            task_scheduled = self.schedule_task_with_preemption(user, label, task)
+            if task_scheduled:
+                # task scheduled successfully -> consume item from queue
+                self.ready.get()
+                continue
+
+            # cluster is full or task failed to get scheduled :(
+            break
 
 
 if __name__ == "__main__":

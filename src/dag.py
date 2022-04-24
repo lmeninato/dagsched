@@ -19,6 +19,7 @@ class Task:
     start = None
     end = None
     runtime = 0
+    priority = None
 
     def __init__(self, name, props, status=None):
         """
@@ -39,6 +40,11 @@ class Task:
             if opt not in props:
                 props[opt] = val
         props["id"] = self.id
+
+        if self.status:
+            props["status"] = self.status
+        if "priority" in props:
+            self.priority = props["priority"]
         return props
 
     def get_props(self):
