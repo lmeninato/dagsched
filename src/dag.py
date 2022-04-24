@@ -19,6 +19,8 @@ class Task:
     start = None
     end = None
     runtime = 0
+    # used for preemption to know how long a task ran for
+    prev_runtime = None
     priority = None
 
     def __init__(self, name, props, status=None):
@@ -68,6 +70,8 @@ class DAG:
         self.tasks = {}
 
         if deserialize:
+            # if the task came from Dash, we need to
+            # deserialize it, hence this ugly mess
             for node in dag["nodes"]:
                 data = node["data"]
                 name = data["id"]
@@ -102,6 +106,8 @@ class DAG:
         return self.nodes + self.edges
 
     def toJSON(self):
+        # needed because of dash limitation where it requires
+        # classes to be json serializable to be stored in a client-side dcc.Store
         return orjson.dumps(self)
 
 

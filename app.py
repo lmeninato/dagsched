@@ -1,4 +1,4 @@
-from src.scheduling import FCFS
+from src.scheduling import FCFS, PreemptivePriorityScheduler
 from src.scheduling_ui import (
     get_scheduling_output,
     render_scheduling_messages,
@@ -96,7 +96,15 @@ app.layout = html.Div(
                     label="Scheduling Visualization",
                     children=[
                         dcc.Dropdown(
-                            id="scheduler-dropdown", options=["FCFS"], value=["FCFS"]
+                            id="scheduler-dropdown",
+                            options=[
+                                {"label": "FCFS", "value": "First Come First Serve"},
+                                {
+                                    "label": "Preemptive Priority Scheduler",
+                                    "value": "PREPRIO",
+                                },
+                            ],
+                            value=["FCFS"],
                         ),
                         html.Button(id="run-scheduler", n_clicks=0, children="Run"),
                         html.Div(id="scheduling-output"),
@@ -140,12 +148,14 @@ app.layout = html.Div(
 def perform_scheduling(n_clicks, scheduler_type, dags, users, cluster):
     global SCHEDULER
 
-    scheduler_type = scheduler_type[0]
+    # scheduler_type = scheduler_type[0]
     try:
         if scheduler_type == "FCFS":
             SCHEDULER = FCFS(cluster, dags, users)
+        elif scheduler_type == "PREPRIO":
+            SCHEDULER = PreemptivePriorityScheduler(cluster, dags, users)
         else:
-            logging.error("Invalid scheduler selected")
+            logging.error(f"Invalid scheduler selected: {scheduler_type}")
             raise ValueError
 
         if SCHEDULER:

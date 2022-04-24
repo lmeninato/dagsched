@@ -1,14 +1,13 @@
 import unittest
-from src.scheduling import FCFS
+from src.scheduling import FCFS, PreemptivePriorityScheduler
 from src.read_graph import read_yaml
-
-data = read_yaml("data/simple_dag.yml")
-users = list(data["users"].keys())
 
 
 class TestFCFS(unittest.TestCase):
-
-    scheduler = FCFS(data["cluster"], data["users"], users, deserialize=False)
+    def setUp(self):
+        data = read_yaml("data/simple_dag.yml")
+        users = list(data["users"].keys())
+        self.scheduler = FCFS(data["cluster"], data["users"], users, deserialize=False)
 
     def test_constructor(self):
         self.assertEqual(self.scheduler.utilization["cpus"], 0)
@@ -52,9 +51,57 @@ class TestFCFS(unittest.TestCase):
         self.assertTrue(len(messages))
 
     def test_scheduling_run(self):
-        self.scheduler = FCFS(data["cluster"], data["users"], users, deserialize=False)
-        self.scheduler.run()
-        self.assertEqual(self.scheduler.time, 16)
+        data = read_yaml("data/simple_dag.yml")
+        users = list(data["users"].keys())
+        scheduler = FCFS(data["cluster"], data["users"], users, deserialize=False)
+        scheduler.run()
+        self.assertEqual(scheduler.time, 16)
+
+
+class TestPreemptivePriorityScheduler(unittest.TestCase):
+    def setUp(self):
+        data = read_yaml("data/simple_prio_dag.yml")
+        users = list(data["users"].keys())
+        self.scheduler = PreemptivePriorityScheduler(
+            data["cluster"], data["users"], users, deserialize=False
+        )
+
+    def test_constructor(self):
+        self.assertEqual(self.scheduler.utilization["cpus"], 0)
+
+    def test_scheduling_steps(self):
+        finished = self.scheduler.perform_scheduling_round()
+        self.assertFalse(finished)
+        self.assertEqual(self.scheduler.time, 4)
+        self.assertEqual(len(self.scheduler.running), 2)
+
+        finished = self.scheduler.perform_scheduling_round()
+        self.assertFalse(finished)
+        self.assertEqual(self.scheduler.time, 9)
+        self.assertEqual(len(self.scheduler.running), 1)
+
+    def test_scheduling_history(self):
+        self.assertEqual(len(self.scheduler.history.times), 6)
+
+        messages, dags, utilization = self.scheduler.history.get_events_at_time_t(0)
+        self.assertEqual(utilization["cpus"], 12)
+        self.assertEqual(len(list(dags.keys())), 2)
+        self.assertTrue(len(messages))
+
+        messages, dags, utilization = self.scheduler.history.get_events_at_time_t(16)
+        self.assertEqual(utilization["cpus"], 0)
+        self.assertEqual(len(list(dags.keys())), 2)
+        self.assertTrue(len(messages))
+
+    def test_scheduling_run(self):
+
+        data = read_yaml("data/simple_prio_dag.yml")
+        users = list(data["users"].keys())
+        scheduler = PreemptivePriorityScheduler(
+            data["cluster"], data["users"], users, deserialize=False
+        )
+        scheduler.run()
+        self.assertEqual(scheduler.time, 79)
 
 
 if __name__ == "__main__":
