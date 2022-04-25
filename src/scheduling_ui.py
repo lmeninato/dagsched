@@ -28,6 +28,8 @@ def get_scheduling_output(scheduler: Scheduler):
         ),
         html.Div(id="scheduling-messages"),
         html.Div(id="scheduling-utilization"),
+        html.Button(id="increase-time", n_clicks=0, children=">>"),
+        html.Button(id="decrease-time", n_clicks=0, children="<<"),
     ]
 
 

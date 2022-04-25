@@ -1,5 +1,6 @@
 from dag import DAG, TaskStatus
 from mlfq import MultiLevelFeedbackQueue
+from metrics import SchedulingMetrics
 from collections import deque
 from copy import deepcopy
 
@@ -47,6 +48,7 @@ class Scheduler:
         self.time = 0
         self.messages = []
         self.history = SchedulerHistory()
+        self.metrics = SchedulingMetrics(self.dags)
         self.running = {}
 
     def run(self):
@@ -87,6 +89,7 @@ class Scheduler:
                             f"task: {task}) now READY"
                         )
                         task.status = TaskStatus.READY
+                        task.ready_time = self.time
                         tasks.append((user, label, task))
                     else:
                         task.status = TaskStatus.BLOCKED
@@ -129,6 +132,7 @@ class Scheduler:
         if not task.prev_runtime:
             # store initial run time
             task.start = self.time
+        self.metrics.store_task_queue_time(user, task, self.time)
         # in case of preemption, need to store last time task was running
         task.prev_runtime = self.time
         self.utilization["cpus"] += cpus
@@ -153,6 +157,7 @@ class Scheduler:
                 )
                 self.utilization["cpus"] -= task.props["cpus"]
                 self.utilization["ram"] -= task.props["ram"]
+                self.metrics.store_task_finish_time(user, task)
                 del self.running[key]
 
     def next_time_task_finishes(self):
@@ -210,6 +215,9 @@ class Scheduler:
 
         task.status = TaskStatus.PREEMPTED
         task.runtime = self.time - task.start
+
+        self.metrics.store_preemption(user, task)
+
         # should we increase priority of preempted tasks?
 
         self.utilization["cpus"] -= task.props["cpus"]

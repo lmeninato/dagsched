@@ -16,6 +16,8 @@ class Task:
     required = ["label", "duration"]
     optional = {"cpus": 1, "ram": 1}
     status = None
+    # used to track when a task started to be ready
+    ready_time = None
     start = None
     end = None
     runtime = 0
@@ -29,6 +31,8 @@ class Task:
         """
         self.id = name
         self.validate(props)
+
+        # used for visible properties in cytoscape
         self.props = self.add_defaults(props)
         self.status = status
 

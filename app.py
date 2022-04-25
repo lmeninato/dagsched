@@ -66,6 +66,10 @@ base_cyto_stylesheet = [
         "style": {"background-color": "#FFFFFF", "border-color": "#000000"},  # white
     },
     {
+        "selector": '[status = "PREEMPTED"]',
+        "style": {"background-color": "#FFA500", "border-color": "#000000"},  # orange
+    },
+    {
         "selector": "edge",
         "style": {"line-color": "#A3C4BC"},
     },
@@ -98,7 +102,7 @@ app.layout = html.Div(
                         dcc.Dropdown(
                             id="scheduler-dropdown",
                             options=[
-                                {"label": "FCFS", "value": "First Come First Serve"},
+                                {"label": "First Come First Serve", "value": "FCFS"},
                                 {
                                     "label": "Preemptive Priority Scheduler",
                                     "value": "PREPRIO",
@@ -139,7 +143,7 @@ app.layout = html.Div(
 @app.callback(
     Output("scheduling-output", "children"),
     Input("run-scheduler", "n_clicks"),
-    State("scheduler-dropdown", "value"),
+    [State("scheduler-dropdown", "value")],
     State("session-dags", "data"),
     State("session-users", "data"),
     State("session-cluster", "data"),
@@ -148,7 +152,8 @@ app.layout = html.Div(
 def perform_scheduling(n_clicks, scheduler_type, dags, users, cluster):
     global SCHEDULER
 
-    # scheduler_type = scheduler_type[0]
+    if isinstance(scheduler_type, list):
+        scheduler_type = scheduler_type[0]
     try:
         if scheduler_type == "FCFS":
             SCHEDULER = FCFS(cluster, dags, users)
@@ -187,6 +192,32 @@ def render_state_from_scheduler_history(time, dags):
         render_scheduling_messages(messages),
         render_utilization(SCHEDULER.cluster, utilization),
     )
+
+
+@app.callback(
+    Output("scheduling-times-dropdown", "value"),
+    Input("increase-time", "n_clicks"),
+    State("scheduling-times-dropdown", "options"),
+    State("scheduling-times-dropdown", "value"),
+    prevent_initial_call=True,
+)
+def increase_history_time(n_clicks, options, time):
+    values = [option["value"] for option in options]
+    index = values.index(time)
+    return values[(index + 1) % len(options)]
+
+
+@app.callback(
+    Output("scheduling-times-dropdown", "value"),
+    Input("decrease-time", "n_clicks"),
+    State("scheduling-times-dropdown", "options"),
+    State("scheduling-times-dropdown", "value"),
+    prevent_initial_call=True,
+)
+def decrease_history_time(n_clicks, options, time):
+    values = [option["value"] for option in options]
+    index = values.index(time)
+    return values[(index - 1) % len(options)]
 
 
 @app.callback(Output("input-ui", "children"), [Input("input-dropdown", "value")])
