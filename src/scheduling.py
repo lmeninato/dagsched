@@ -1,3 +1,4 @@
+from typing import Callable
 from dag import DAG, TaskStatus
 from mlfq import MultiLevelFeedbackQueue
 from metrics import SchedulingMetrics
@@ -303,13 +304,31 @@ class FCFS(Scheduler):
         return super().set_next_event_time()
 
 
-class PreemptivePriorityScheduler(Scheduler):
-    def __init__(self, cluster, dags, users, deserialize=True):
+def get_default_priority(task):
+    if task.priority is None:
+        return 0
+    return task.priority
+
+
+class PriorityScheduler(Scheduler):
+    """
+    Non preemptive priority queue scheduler
+
+    schedules tasks FCFS by priority
+    """
+
+    def __init__(
+        self,
+        cluster,
+        dags,
+        users,
+        deserialize=True,
+        priority_func: Callable = get_default_priority,
+    ):
         super().__init__(cluster, dags, users, deserialize)
         for _, dag in self.dags.items():
             for _, task in dag.tasks.items():
-                if task.priority is None:
-                    task.priority = 0
+                task.priority = priority_func(task)
         self.ready = MultiLevelFeedbackQueue()
         self.store_history(initial=True)
 
@@ -318,7 +337,7 @@ class PreemptivePriorityScheduler(Scheduler):
 
     def perform_scheduling_round(self):
         """
-        Preemptive Priority Scheduling
+        Non-Preemptive Priority Scheduling
             -> put all ready tasks in multilevel feedback queue
             -> run tasks from queue until resources are exhausted
                 -> schedule high priority tasks first
@@ -341,6 +360,34 @@ class PreemptivePriorityScheduler(Scheduler):
         super().store_history(initial=False)
         finished = super().set_next_event_time()
         return finished
+
+    def schedule_tasks(self):
+        """
+        Also see FCFS docstring
+
+        Now we pull from a stable priority queue
+        """
+        if not self.ready.size:
+            return
+
+        while self.ready.size:
+            user, label, task = self.ready.peek()
+            task_scheduled = super().schedule_task(user, label, task)
+            if task_scheduled:
+                # task scheduled successfully -> consume item from queue
+                self.ready.get()
+                continue
+
+            # cluster is full or task failed to get scheduled :(
+            break
+
+
+class PreemptivePriorityScheduler(PriorityScheduler):
+    def run(self):
+        super().run()
+
+    def perform_scheduling_round(self):
+        return super().perform_scheduling_round()
 
     def schedule_task_with_preemption(self, user, label, task):
         """
@@ -403,6 +450,26 @@ class PreemptivePriorityScheduler(Scheduler):
 
             # cluster is full or task failed to get scheduled :(
             break
+
+
+def compute_service_size(task):
+    if task.priority is None:
+        task.priority = 1
+
+    cpus, ram = task.props["cpus"], task.props["ram"]
+
+    return task.priority * cpus * ram
+
+
+class SmallestServiceFirst(PriorityScheduler):
+    def __init__(self, cluster, dags, users, deserialize=True):
+        super().__init__(cluster, dags, users, deserialize, compute_service_size)
+
+    def run(self):
+        super().run()
+
+    def perform_scheduling_round(self):
+        return super().perform_scheduling_round()
 
 
 if __name__ == "__main__":
