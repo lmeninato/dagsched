@@ -2,6 +2,14 @@ from collections import defaultdict, deque
 
 
 class MultiLevelFeedbackQueue:
+    """
+    Python priority queue is not stable since it's based on a heap
+
+    This either functions as a multi level feedback queue OR
+    as a stable priority queue (see its usage in the non preemptive
+    priority scheduler)
+    """
+
     def __init__(self) -> None:
         self.levels = defaultdict(deque)
         self.size = 0

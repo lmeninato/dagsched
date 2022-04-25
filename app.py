@@ -1,11 +1,16 @@
-from src.scheduling import FCFS, PreemptivePriorityScheduler
+from src.scheduling import (
+    FCFS,
+    PriorityScheduler,
+    PreemptivePriorityScheduler,
+    SmallestServiceFirst,
+)
 from src.scheduling_ui import (
     get_scheduling_output,
     render_scheduling_messages,
     render_utilization,
 )
 from src.dag import DAG
-from src.read_graph import read_dag_specs, parse_contents, read_yaml
+from src.read_graph import parse_contents, read_yaml
 
 from dash import dcc
 
@@ -32,8 +37,6 @@ app.config.suppress_callback_exceptions = True
 SCHEDULER = None
 
 cyto.load_extra_layouts()
-
-specs = read_dag_specs("data")
 
 base_cyto_stylesheet = [
     {
@@ -104,8 +107,16 @@ app.layout = html.Div(
                             options=[
                                 {"label": "First Come First Serve", "value": "FCFS"},
                                 {
+                                    "label": "Priority Scheduler",
+                                    "value": "PRIO",
+                                },
+                                {
                                     "label": "Preemptive Priority Scheduler",
                                     "value": "PREPRIO",
+                                },
+                                {
+                                    "label": "Smallest Service First",
+                                    "value": "SSF",
                                 },
                             ],
                             value=["FCFS"],
@@ -157,6 +168,10 @@ def perform_scheduling(n_clicks, scheduler_type, dags, users, cluster):
     try:
         if scheduler_type == "FCFS":
             SCHEDULER = FCFS(cluster, dags, users)
+        elif scheduler_type == "PRIO":
+            SCHEDULER = PriorityScheduler(cluster, dags, users)
+        elif scheduler_type == "SSF":
+            SCHEDULER = SmallestServiceFirst(cluster, dags, users)
         elif scheduler_type == "PREPRIO":
             SCHEDULER = PreemptivePriorityScheduler(cluster, dags, users)
         else:
@@ -222,7 +237,11 @@ def decrease_history_time(n_clicks, options, time):
 
 @app.callback(Output("input-ui", "children"), [Input("input-dropdown", "value")])
 def render_input_ui(value):
-    input_option = value[0]
+    logging.info(f"selected input type: {value}")
+    if isinstance(value, list):
+        input_option = value[0]
+    else:
+        input_option = value
     if input_option == "Import from File":
         # "Import from File" is checked -> render ui to import file:
         return [
