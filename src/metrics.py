@@ -58,7 +58,7 @@ class SchedulingMetrics:
     def get_jct(self, local_func=mean, global_func=mean):
         """
         get global task completion time
-        can pass in custom functions to determine what statistic is desireD:
+        can pass in custom functions to determine what statistic is desired:
         e.g.
 
         max of minimum jcts:
