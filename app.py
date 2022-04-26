@@ -59,23 +59,38 @@ base_cyto_stylesheet = [
     },
     {
         "selector": '[status = "RUNNING"]',
-        "style": {"background-color": "#00FF00", "border-color": "#000000"},  # green
+        "style": {
+            "background-color": " #00cc99",
+            "border-color": "#000000",
+        },  # green #00FF00
     },
     {
         "selector": '[status = "READY"]',
-        "style": {"background-color": "#FFFF00", "border-color": "#000000"},  # yellow
+        "style": {
+            "background-color": "#ffcc00",
+            "border-color": "#000000",
+        },  # yellow #FFFF00
     },
     {
         "selector": '[status = "BLOCKED"]',
-        "style": {"background-color": "#FF0000", "border-color": "#000000"},  # red
+        "style": {
+            "background-color": "#ff5050",
+            "border-color": "#000000",
+        },  # red #FF0000
     },
     {
         "selector": '[status = "FINISHED"]',
-        "style": {"background-color": "#FFFFFF", "border-color": "#000000"},  # white
+        "style": {
+            "background-color": "#33cccc",
+            "border-color": "#000000",
+        },  # white #FFFFFF changed to blue - white difficult to understand
     },
     {
         "selector": '[status = "PREEMPTED"]',
-        "style": {"background-color": "#FFA500", "border-color": "#000000"},  # orange
+        "style": {
+            "background-color": "#993399",
+            "border-color": "#000000",
+        },  # orange   #FFA500 changed to purple
     },
     {
         "selector": "edge",
@@ -1116,17 +1131,17 @@ def displayTapNodeData(stylesheet, data):
     style = {
         "selector": "node",
         "style": {
-            "background-color": "BFD7B5",
+            "background-color": "#BFD7B5",
             "label": "data(label)",
             "text-wrap": "wrap",
             "text-valign": "bottom",
             "text-halign": "center",
-            "border-color": "purple",
+            "border-color": "#ff9900",
             "border-width": 2,
             "border-opacity": 1,
-            "color": "#B10DC9",
+            "color": "#ffffff",
             "text-opacity": 1,
-            "font-size": 8,
+            "font-size": 6,
             "z-index": 9999,
         },
     }
