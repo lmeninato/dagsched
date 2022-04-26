@@ -26,6 +26,7 @@ import glob
 
 import os
 import pathlib
+import pandas as pd
 
 logging.basicConfig(
     format="%(asctime)s %(levelname)s: %(message)s",
@@ -39,13 +40,48 @@ app.config.suppress_callback_exceptions = True
 
 SCHEDULER = None
 
+
+# app = dash.Dash(__name__)
+app = DashProxy(transforms=[MultiplexerTransform()])
+app.config.suppress_callback_exceptions = True
+
+# mcxh
+app.title = "DAG Visualization"
+server = app.server
+app.config["suppress_callback_exceptions"] = True
+
+APP_PATH = str(pathlib.Path(__file__).parent.resolve())
+# specs = read_dag_specs("data")
+# params = ["User Name", "Jobs", "Time", "Utilization"]
+
+df = pd.read_csv(os.path.join(APP_PATH, os.path.join("data", "policies.csv")))
+userdf = pd.read_csv(os.path.join(APP_PATH, os.path.join("data", "users.csv")))
+
+params = list(df)
+max_length = len(df)
+
+users = list(userdf)
+suffix_row = "_row"
+suffix_button_id = "_button"
+suffix_sparkline_graph = "_sparkline_graph"
+suffix_count = "_count"
+suffix_ooc_n = "_OOC_number"
+suffix_ooc_g = "_OOC_graph"
+suffix_indicator = "_indicator"
+suffix_test = "_testing"
+# mxch end
+
+
+SCHEDULER = None
+
 cyto.load_extra_layouts()
+
 
 base_cyto_stylesheet = [
     {
         "selector": "node",
         "style": {
-            "background-color": "BFD7B5",  # grey
+            "background-color": "#BFD7B5",  # grey
             "border-color": "#000000",  # black
             "border-width": 2,
             "border-opacity": 1,
@@ -344,170 +380,386 @@ app.layout = html.Div(
 )
 
 
+#''' Test 1 '''
+
+
+def init_df():
+    ret = {}
+    for col in list(df[1:]):
+        data = df[col]
+        stats = data.describe()
+
+        std = stats["std"].tolist()
+        ucl = (stats["mean"] + 3 * stats["std"]).tolist()
+        lcl = (stats["mean"] - 3 * stats["std"]).tolist()
+        usl = (stats["mean"] + stats["std"]).tolist()
+        lsl = (stats["mean"] - stats["std"]).tolist()
+
+        ret.update(
+            {
+                col: {
+                    "count": stats["count"].tolist(),
+                    "data": data,
+                    "mean": stats["mean"].tolist(),
+                    "std": std,
+                    "ucl": round(ucl, 3),
+                    "lcl": round(lcl, 3),
+                    "usl": round(usl, 3),
+                    "lsl": round(lsl, 3),
+                    "min": stats["min"].tolist(),
+                    "max": stats["max"].tolist(),
+                    "ooc": populate_ooc(data, ucl, lcl),
+                }
+            }
+        )
+
+    return ret
+
+
+def populate_ooc(data, ucl, lcl):
+    ooc_count = 0
+    ret = []
+    for i in range(len(data)):
+        if data[i] >= ucl or data[i] <= lcl:
+            ooc_count += 1
+            ret.append(ooc_count / (i + 1))
+        else:
+            ret.append(ooc_count / (i + 1))
+    return ret
+
+
+state_dict = init_df()
+
+
+def init_value_setter_store():
+    # Initialize store data
+    state_dict = init_df()
+    return state_dict
+
+
+def build_running_stats_board():
+    return html.Div(
+        id="rsb",
+        className="rsb",
+        children=[
+            html.Div(
+                id="rsb-text",
+                children=[
+                    html.H5("Running Statistics"),
+                ],
+            ),
+            html.Div(
+                id="rsb-logo",  # save local and global stats with a single button
+                children=[
+                    build_top_panel(1),
+                    html.Div(
+                        children=[
+                            html.A(
+                                html.Button(children="Save"),
+                                href="https://plotly.com/get-demo/",
+                            ),
+                        ],
+                        style={"float": "right"},
+                    ),
+                ],
+            ),
+        ],
+    )
+
+
+def build_final_stats_boards():
+    return html.Div(
+        id="fsb",
+        className="fsb",
+        children=[
+            html.Div(
+                id="fsb-text",
+                children=[
+                    html.H5("FInal Summary of Scheduling Run"),
+                ],
+            ),
+            html.Div(
+                id="fsb-logo",
+                children=[
+                    html.A(
+                        html.Button(children="Save"),
+                        href="https://plotly.com/get-demo/",
+                    ),
+                ],
+            ),
+        ],
+    )
+
+
+def generate_section_banner(title):
+    return html.Div(className="section-banner", children=title)
+
+
+# Build header
+def generate_metric_list_header():
+    return generate_metric_row(
+        "metric_header",
+        {"height": "3rem", "margin": "1rem 0", "textAlign": "center"},
+        {"id": "m_header_1", "children": html.Div("User")},
+        {"id": "m_header_2", "children": html.Div("Jobs")},
+        {"id": "m_header_3", "children": html.Div("CPU Utilization")},
+        {"id": "m_header_4", "children": html.Div("IO Utilization")},
+        {"id": "m_header_5", "children": html.Div("Total Turnaround Time")},
+        {"id": "m_header_6", "children": html.Div("Avg. Wait Time")},
+        {"id": "m_header_7", "children": html.Div("TestCol")},
+    )
+
+
+def generate_metric_row_helper(stopped_interval, index):
+    print(params)
+    item = params[index]
+
+    div_id = item + suffix_row
+    button_id = item + suffix_button_id
+    sparkline_graph_id = item + suffix_sparkline_graph
+    count_id = item + suffix_count
+    ooc_percentage_id = item + suffix_ooc_n
+    ooc_graph_id = item + suffix_ooc_g
+    indicator_id = item + suffix_indicator
+    test_id = item + suffix_test
+    print(test_id)
+
+    return generate_metric_row(
+        div_id,
+        None,
+        {
+            "id": item,
+            "className": "metric-row-button-text",
+            "children": html.Button(
+                id=button_id,
+                className="metric-row-button",
+                children=item,
+                title="Click to visualize live SPC chart",
+                n_clicks=0,
+            ),
+        },
+        {"id": count_id, "children": "0"},
+        {
+            "id": item + "_sparkline",
+            "children": dcc.Graph(
+                id=sparkline_graph_id,
+                style={"width": "100%", "height": "95%"},
+                config={
+                    "staticPlot": False,
+                    "editable": False,
+                    "displayModeBar": False,
+                },
+                figure=go.Figure(
+                    {
+                        "data": [
+                            {
+                                "x": state_dict["Batch"]["data"].tolist()[
+                                    :stopped_interval
+                                ],
+                                "y": state_dict[item]["data"][:stopped_interval],
+                                "mode": "lines+markers",
+                                "name": item,
+                                "line": {"color": "#f4d44d"},
+                            }
+                        ],
+                        "layout": {
+                            "uirevision": True,
+                            "margin": dict(l=0, r=0, t=4, b=4, pad=0),
+                            "xaxis": dict(
+                                showline=False,
+                                showgrid=False,
+                                zeroline=False,
+                                showticklabels=False,
+                            ),
+                            "yaxis": dict(
+                                showline=False,
+                                showgrid=False,
+                                zeroline=False,
+                                showticklabels=False,
+                            ),
+                            "paper_bgcolor": "rgba(0,0,0,0)",
+                            "plot_bgcolor": "rgba(0,0,0,0)",
+                        },
+                    }
+                ),
+            ),
+        },
+        {"id": ooc_percentage_id, "children": "0.00%"},
+        {
+            "id": ooc_graph_id + "_container",
+            "children": daq.GraduatedBar(
+                id=ooc_graph_id,
+                color={
+                    "ranges": {
+                        "#92e0d3": [0, 3],
+                        "#f4d44d ": [3, 7],
+                        "#f45060": [7, 15],
+                    }
+                },
+                showCurrentValue=False,
+                max=15,
+                value=0,
+            ),
+        },
+        {
+            "id": item + "_pf",
+            "children": daq.Indicator(
+                id=indicator_id, value=True, color="#91dfd2", size=12
+            ),
+        },
+        {
+            "id": item + "_test",
+            "children": daq.Indicator(id=test_id, value=True, color="#91dfd2", size=12),
+        },
+    )
+
+
+def generate_metric_row(id, style, col1, col2, col3, col4, col5, col6, col7):
+    if style is None:
+        style = {"height": "8rem", "width": "100%"}
+
+    return html.Div(
+        id=id,
+        className="row metric-row",
+        style=style,
+        children=[
+            html.Div(
+                id=col1["id"],
+                className="one column",
+                style={"margin-right": "2.5rem", "minWidth": "50px"},
+                children=col1["children"],
+            ),
+            html.Div(
+                id=col2["id"],
+                style={"textAlign": "center"},
+                className="one column",
+                children=col2["children"],
+            ),
+            html.Div(
+                id=col3["id"],
+                style={"height": "100%"},
+                className="four columns",
+                children=col3["children"],
+            ),
+            html.Div(
+                id=col4["id"],
+                style={},
+                className="one column",
+                children=col4["children"],
+            ),
+            html.Div(
+                id=col5["id"],
+                style={"height": "100%", "margin-top": "5rem"},
+                className="three columns",
+                children=col5["children"],
+            ),
+            html.Div(
+                id=col6["id"],
+                style={"display": "flex", "justifyContent": "center"},
+                className="one column",
+                children=col6["children"],
+            ),
+            html.Div(
+                id=col7["id"],
+                style={"display": "flex", "justifyContent": "center"},
+                className="one column",
+                children=col7["children"],
+            ),
+        ],
+    )
+
+
+def build_top_panel(stopped_interval):
+    return html.Div(
+        id="top-section-container",
+        className="row",
+        children=[
+            # Metrics summary
+            html.Div(
+                id="metric-summary-session",
+                className="eight columns",
+                children=[
+                    generate_section_banner("Process Control Metrics Summary"),
+                    html.Div(
+                        id="metric-div",
+                        children=[
+                            generate_metric_list_header(),
+                            html.Div(
+                                id="metric-rows",
+                                children=[
+                                    generate_metric_row_helper(stopped_interval, 1),
+                                    generate_metric_row_helper(stopped_interval, 2),
+                                    generate_metric_row_helper(stopped_interval, 3),
+                                    generate_metric_row_helper(stopped_interval, 4),
+                                    generate_metric_row_helper(stopped_interval, 5),
+                                    generate_metric_row_helper(stopped_interval, 6),
+                                    generate_metric_row_helper(stopped_interval, 7),
+                                ],
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+            # Piechart
+            html.Div(
+                id="ooc-piechart-outer",
+                className="four columns",
+                children=[
+                    generate_section_banner("Global Summmary"),
+                    # next div below
+                ],
+            ),
+        ],
+    )
+
+
 """app.layout = html.Div(
+    id="big-app-container",
+    children=[
+        build_banner(),
+        dcc.Interval(
+            id="interval-component",
+            interval=2 * 1000,  # in milliseconds
+            n_intervals=50,  # start at batch 50
+            disabled=True,
+        ),
+        html.Div(
+            id="app-container",
+            children=[
+                build_tabs(),
+                # Main app
+                html.Div(id="app-content"),
+            ],
+        ),
+        dcc.Store(id="value-setter-store", data=init_value_setter_store()),
+        dcc.Store(id="n-interval-stage", data=50),
+        generate_modal(),
+    ],
+)"""
+
+
+app.layout = html.Div(
     [
-        html.P("DAG Scheduling Visualization"),
+        build_banner(),
         # store current list of DAGs
         dcc.Store(id="session-cluster", storage_type="session"),
         dcc.Store(id="session-dags", storage_type="session"),
         dcc.Store(id="session-users", storage_type="session"),
-        dcc.Tabs(
-            id="tabs",
+        html.Div(
+            id="app-container",
             children=[
-                dcc.Tab(
-                    label="Input Scheduling Task",
-                    children=[
-                        dcc.Dropdown(
-                            id="input-dropdown",
-                            options=["Sample Tasks", "Import from File", "Custom"],
-                            value=["Sample Tasks"],
-                        ),
-                        html.Div(id="input-ui"),
-                    ],
-                ),
-                dcc.Tab(
-                    label="Scheduling Visualization",
-                    children=[
-                        dcc.Dropdown(
-                            id="scheduler-dropdown",
-                            options=[
-                                {"label": "First Come First Serve", "value": "FCFS"},
-                                {
-                                    "label": "Priority Scheduler",
-                                    "value": "PRIO",
-                                },
-                                {
-                                    "label": "Preemptive Priority Scheduler",
-                                    "value": "PREPRIO",
-                                },
-                                {
-                                    "label": "Smallest Service First",
-                                    "value": "SSF",
-                                },
-                            ],
-                            value=["FCFS"],
-                        ),
-                        html.Button(id="run-scheduler", n_clicks=0, children="Run"),
-                        html.Div(id="scheduling-output"),
-                        dcc.Dropdown(id="user-dropdown"),
-                        cyto.Cytoscape(
-                            id="cytoscape-elements-callbacks",
-                            layout={
-                                "name": "dagre",
-                                # "animate": True,
-                                # "animationDuration": 1000,
-                                "rankDir": "LR",
-                            },
-                            autoRefreshLayout=True,
-                            stylesheet=base_cyto_stylesheet,
-                            style={
-                                "width": "50vw",
-                                "height": "75vh",
-                                "font-size": 8,
-                                "margin": "25px",
-                                "border": "grey solid",
-                            },
-                            elements=[],
-                        ),
-                    ],
-                ),
+                build_tabs(),
+                # Main app
+                html.Div(id="app-content"),
             ],
-        ),
+        ),  # App Container Div ends
     ]
-)"""
-
-
-@app.callback(
-    Output("scheduling-output", "children"),
-    Input("run-scheduler", "n_clicks"),
-    [State("scheduler-dropdown", "value")],
-    State("session-dags", "data"),
-    State("session-users", "data"),
-    State("session-cluster", "data"),
-    prevent_initial_call=True,
-)
-def perform_scheduling(n_clicks, scheduler_type, dags, users, cluster):
-    global SCHEDULER
-
-    if isinstance(scheduler_type, list):
-        scheduler_type = scheduler_type[0]
-    try:
-        if scheduler_type == "FCFS":
-            SCHEDULER = FCFS(cluster, dags, users)
-        elif scheduler_type == "PRIO":
-            SCHEDULER = PriorityScheduler(cluster, dags, users)
-        elif scheduler_type == "SSF":
-            SCHEDULER = SmallestServiceFirst(cluster, dags, users)
-        elif scheduler_type == "PREPRIO":
-            SCHEDULER = PreemptivePriorityScheduler(cluster, dags, users)
-        else:
-            logging.error(f"Invalid scheduler selected: {scheduler_type}")
-            raise ValueError
-
-        if SCHEDULER:
-            SCHEDULER.run()
-    except Exception:
-        SCHEDULER = None
-
-    return get_scheduling_output(SCHEDULER)
-
-
-@app.callback(
-    Output("session-dags", "data"),
-    Output("scheduling-messages", "children"),
-    Output("scheduling-utilization", "children"),
-    Input("scheduling-times-dropdown", "value"),
-    State("session-dags", "data"),
-    prevent_initial_call=True,
-)
-def render_state_from_scheduler_history(time, dags):
-    logging.info(f"Selected time is {time}")
-
-    if SCHEDULER is None:
-        return dags, None, None
-
-    messages, dags, utilization = SCHEDULER.get_history(time)
-
-    return (
-        dags,
-        render_scheduling_messages(messages),
-        render_utilization(SCHEDULER.cluster, utilization),
-    )
-
-
-@app.callback(
-    Output("scheduling-times-dropdown", "value"),
-    Input("increase-time", "n_clicks"),
-    State("scheduling-times-dropdown", "options"),
-    State("scheduling-times-dropdown", "value"),
-    prevent_initial_call=True,
-)
-def increase_history_time(n_clicks, options, time):
-    values = [option["value"] for option in options]
-    index = values.index(time)
-    return values[(index + 1) % len(options)]
-
-
-@app.callback(
-    Output("scheduling-times-dropdown", "value"),
-    Input("decrease-time", "n_clicks"),
-    State("scheduling-times-dropdown", "options"),
-    State("scheduling-times-dropdown", "value"),
-    prevent_initial_call=True,
-)
-def decrease_history_time(n_clicks, options, time):
-    values = [option["value"] for option in options]
-    index = values.index(time)
-    return values[(index - 1) % len(options)]
+)  # app layout ends
 
 
 @app.callback(Output("input-ui", "children"), [Input("input-dropdown", "value")])
 def render_input_ui(value):
-    logging.info(f"selected input type: {value}")
-    if isinstance(value, list):
-        input_option = value[0]
-    else:
-        input_option = value
+    input_option = value[0]
     if input_option == "Import from File":
         # "Import from File" is checked -> render ui to import file:
         return [
@@ -519,7 +771,7 @@ def render_input_ui(value):
                     # "height": "60px",
                     # "lineHeight": "60px",
                     "borderWidth": "1px",
-                    "borderStyle": "dashed",
+                    "borderStyle": "dcced",
                     "borderRadius": "5px",
                     "textAlign": "center",
                     "margin": "10px",
@@ -538,8 +790,9 @@ def render_input_ui(value):
         ]
     # else create custom scheduling tasks data
     return [
-        html.H1("todo - render UI for custom DAG"),
-        daq.NumericInput(id="input-number-users", value=1),
+        html.H1("Input Specifications"),
+        html.H6("Enter Number of Users:"),
+        daq.NumericInput(id="input-number-users", value=1, className="numeric-input"),
         html.Div(id="custom-user-tasks-ui"),
     ]
 
@@ -553,13 +806,15 @@ def render_custom_user_tasks_ui(num_users):
     ui_elements = [
         daq.NumericInput(
             id="input-cluster-cpus",
-            label="Input Number of CPUs:",
+            label="Input Number of CPUs",
             value=10,
+            className="numeric-input",
         ),
         daq.NumericInput(
             id="input-cluster-ram",
-            label="Input GBs of RAMs:",
+            label="Input GBs of RAMs",
             value=20,
+            className="numeric-input",
         ),
     ]
 
@@ -655,8 +910,9 @@ def create_user_task_callbacks(num_tasks, user_form):
                         "user": user_id,
                         "task": task_num,
                     },
-                    label="Input Task Duration:",
+                    label="Input Task Duration",
                     value=5,
+                    className="numeric-input",
                 ),
                 daq.NumericInput(
                     id={
@@ -665,8 +921,9 @@ def create_user_task_callbacks(num_tasks, user_form):
                         "user": user_id,
                         "task": task_num,
                     },
-                    label="Input Task Required CPUs:",
+                    label="Input Task Required CPUs",
                     value=1,
+                    className="numeric-input",
                 ),
                 daq.NumericInput(
                     id={
@@ -675,8 +932,9 @@ def create_user_task_callbacks(num_tasks, user_form):
                         "user": user_id,
                         "task": task_num,
                     },
-                    label="Input Task Required RAM:",
+                    label="Input Task Required RAM",
                     value=1,
+                    className="numeric-input",
                 ),
                 dcc.Dropdown(
                     id={
@@ -688,6 +946,7 @@ def create_user_task_callbacks(num_tasks, user_form):
                     options=[f"task_{i}" for i in range(task_num)],
                     placeholder="Please Select Task Dependencies:",
                     multi=True,
+                    className="numeric-input",
                 ),
             ]
         )
@@ -697,20 +956,23 @@ def create_user_task_callbacks(num_tasks, user_form):
 
 def create_user_task(i):
     return [
+        html.H3("User " + str(i) + "'s Specifications"),
         dcc.Input(
             id={"type": "input-user-name", "user": i},
             type="text",
-            placeholder="Input User Name:",
+            placeholder="Input User Name",
         ),
         daq.NumericInput(
             id={"type": "input-arrival", "user": i},
-            label="Input Arrival Time:",
+            label="Input Arrival Time",
             value=0,
+            className="numeric-input",
         ),
         daq.NumericInput(
             id={"type": "input-num-tasks", "user": i},
             label=f"Input Number of tasks for User {i}",
             value=2,
+            className="numeric-input",
         ),
         html.Div(id={"type": "user-tasks-form", "user": i}),
     ]
@@ -793,7 +1055,7 @@ def update_scheduling_tasks_from_sample(path):
 @app.callback(
     Output("cytoscape-elements-callbacks", "elements"),
     Input("user-dropdown", "value"),
-    Input("session-dags", "data"),
+    State("session-dags", "data"),
     State("session-users", "data"),
 )
 def update_shown_dag(value, dags, users):
@@ -827,26 +1089,55 @@ def displayTapNodeData(stylesheet, data):
             "text-wrap": "wrap",
             "text-valign": "bottom",
             "text-halign": "center",
-            "border-color": "purple",
+            "border-color": "#00ffcc",
             "border-width": 2,
             "border-opacity": 1,
-            "color": "#B10DC9",
-            "text-opacity": 1,
-            "font-size": 8,
+            "color": "#00ffcc",
+            "text-opacity": 0.9,
+            "font-size": 4,
             "z-index": 9999,
         },
     }
 
+
+@app.callback(
+    Output("scheduling-output", "children"),
+    Input("run-scheduler", "n_clicks"),
+    State("scheduler-dropdown", "value"),
+    State("session-dags", "data"),
+    State("session-users", "data"),
+    State("session-cluster", "data"),
+    prevent_initial_call=True,
+)
+def perform_scheduling(n_clicks, scheduler_type, dags, users, cluster):
+    global SCHEDULER
+
+    # scheduler_type = scheduler_type[0]
+    try:
+        if scheduler_type == "FCFS":
+            SCHEDULER = FCFS(cluster, dags, users)
+        elif scheduler_type == "PREPRIO":
+            SCHEDULER = PreemptivePriorityScheduler(cluster, dags, users)
+        else:
+            logging.error(f"Invalid scheduler selected: {scheduler_type}")
+            raise ValueError
+
+        if SCHEDULER:
+            SCHEDULER.run()
+    except Exception:
+        SCHEDULER = None
+
+    return get_scheduling_output(SCHEDULER)
+
     if data:
-        base_stylesheet = base_cyto_stylesheet
+        base_style = stylesheet[:2]
         style["selector"] = f"node[label = \"{data['label']}\"]"
         style["style"][
             "label"
-        ] = f"{data['label']}\nDuration: {data['duration']}\nCPUs: {data['cpus']}\nRAM: {data['ram']}"  # noqa
-
-        stylesheet = base_stylesheet + [style]
+        ] = f"{data['label']}\n Duration: {data['duration']}\nCPUs: {data['cpus']}\nRAM: {data['ram']}"  # noqa
+        stylesheet = base_style + [style]
 
     return stylesheet
 
 
-app.run_server(debug=True)
+app.run_server(debug=True, port=8052)
