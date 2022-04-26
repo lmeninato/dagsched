@@ -1,11 +1,16 @@
-from src.scheduling import FCFS
+from src.scheduling import (
+    FCFS,
+    PriorityScheduler,
+    PreemptivePriorityScheduler,
+    SmallestServiceFirst,
+)
 from src.scheduling_ui import (
     get_scheduling_output,
     render_scheduling_messages,
     render_utilization,
 )
 from src.dag import DAG
-from src.read_graph import read_dag_specs, parse_contents, read_yaml
+from src.read_graph import parse_contents, read_yaml
 
 from dash import dcc
 
@@ -32,8 +37,6 @@ app.config.suppress_callback_exceptions = True
 SCHEDULER = None
 
 cyto.load_extra_layouts()
-
-specs = read_dag_specs("data")
 
 base_cyto_stylesheet = [
     {
@@ -66,6 +69,10 @@ base_cyto_stylesheet = [
         "style": {"background-color": "#FFFFFF", "border-color": "#000000"},  # white
     },
     {
+        "selector": '[status = "PREEMPTED"]',
+        "style": {"background-color": "#FFA500", "border-color": "#000000"},  # orange
+    },
+    {
         "selector": "edge",
         "style": {"line-color": "#A3C4BC"},
     },
@@ -96,7 +103,23 @@ app.layout = html.Div(
                     label="Scheduling Visualization",
                     children=[
                         dcc.Dropdown(
-                            id="scheduler-dropdown", options=["FCFS"], value=["FCFS"]
+                            id="scheduler-dropdown",
+                            options=[
+                                {"label": "First Come First Serve", "value": "FCFS"},
+                                {
+                                    "label": "Priority Scheduler",
+                                    "value": "PRIO",
+                                },
+                                {
+                                    "label": "Preemptive Priority Scheduler",
+                                    "value": "PREPRIO",
+                                },
+                                {
+                                    "label": "Smallest Service First",
+                                    "value": "SSF",
+                                },
+                            ],
+                            value=["FCFS"],
                         ),
                         html.Button(id="run-scheduler", n_clicks=0, children="Run"),
                         html.Div(id="scheduling-output"),
@@ -131,7 +154,7 @@ app.layout = html.Div(
 @app.callback(
     Output("scheduling-output", "children"),
     Input("run-scheduler", "n_clicks"),
-    State("scheduler-dropdown", "value"),
+    [State("scheduler-dropdown", "value")],
     State("session-dags", "data"),
     State("session-users", "data"),
     State("session-cluster", "data"),
@@ -140,12 +163,19 @@ app.layout = html.Div(
 def perform_scheduling(n_clicks, scheduler_type, dags, users, cluster):
     global SCHEDULER
 
-    scheduler_type = scheduler_type[0]
+    if isinstance(scheduler_type, list):
+        scheduler_type = scheduler_type[0]
     try:
         if scheduler_type == "FCFS":
             SCHEDULER = FCFS(cluster, dags, users)
+        elif scheduler_type == "PRIO":
+            SCHEDULER = PriorityScheduler(cluster, dags, users)
+        elif scheduler_type == "SSF":
+            SCHEDULER = SmallestServiceFirst(cluster, dags, users)
+        elif scheduler_type == "PREPRIO":
+            SCHEDULER = PreemptivePriorityScheduler(cluster, dags, users)
         else:
-            logging.error("Invalid scheduler selected")
+            logging.error(f"Invalid scheduler selected: {scheduler_type}")
             raise ValueError
 
         if SCHEDULER:
@@ -179,9 +209,39 @@ def render_state_from_scheduler_history(time, dags):
     )
 
 
+@app.callback(
+    Output("scheduling-times-dropdown", "value"),
+    Input("increase-time", "n_clicks"),
+    State("scheduling-times-dropdown", "options"),
+    State("scheduling-times-dropdown", "value"),
+    prevent_initial_call=True,
+)
+def increase_history_time(n_clicks, options, time):
+    values = [option["value"] for option in options]
+    index = values.index(time)
+    return values[(index + 1) % len(options)]
+
+
+@app.callback(
+    Output("scheduling-times-dropdown", "value"),
+    Input("decrease-time", "n_clicks"),
+    State("scheduling-times-dropdown", "options"),
+    State("scheduling-times-dropdown", "value"),
+    prevent_initial_call=True,
+)
+def decrease_history_time(n_clicks, options, time):
+    values = [option["value"] for option in options]
+    index = values.index(time)
+    return values[(index - 1) % len(options)]
+
+
 @app.callback(Output("input-ui", "children"), [Input("input-dropdown", "value")])
 def render_input_ui(value):
-    input_option = value[0]
+    logging.info(f"selected input type: {value}")
+    if isinstance(value, list):
+        input_option = value[0]
+    else:
+        input_option = value
     if input_option == "Import from File":
         # "Import from File" is checked -> render ui to import file:
         return [

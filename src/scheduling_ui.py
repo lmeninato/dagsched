@@ -28,6 +28,8 @@ def get_scheduling_output(scheduler: Scheduler):
         ),
         html.Div(id="scheduling-messages"),
         html.Div(id="scheduling-utilization"),
+        html.Button(id="increase-time", n_clicks=0, children=">>"),
+        html.Button(id="decrease-time", n_clicks=0, children="<<"),
     ]
 
 
@@ -36,6 +38,6 @@ def render_scheduling_messages(messages):
 
 
 def render_utilization(cluster, utilization):
-    cpu_usage = f"Using {cluster['cpus']} out of {utilization['cpus']} cpus"
-    ram_usage = f"Using {cluster['ram']} out of {utilization['ram']} ram"
+    cpu_usage = f"Using {utilization['cpus']} out of {cluster['cpus']} cpus"
+    ram_usage = f"Using {utilization['ram']} out of {cluster['ram']} ram"
     return [html.P(cpu_usage), html.P(ram_usage)]
