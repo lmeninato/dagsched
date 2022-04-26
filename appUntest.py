@@ -27,6 +27,7 @@ import glob
 import os
 import pathlib
 import pandas as pd
+import plotly.graph_objs as go
 
 logging.basicConfig(
     format="%(asctime)s %(levelname)s: %(message)s",
@@ -378,9 +379,6 @@ app.layout = html.Div(
         build_tabs(),
     ]
 )
-
-
-#''' Test 1 '''
 
 
 def init_df():
