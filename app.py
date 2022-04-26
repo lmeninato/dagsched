@@ -88,7 +88,7 @@ base_cyto_stylesheet = [
     {
         "selector": '[status = "PREEMPTED"]',
         "style": {
-            "background-color": "#993399",
+            "background-color": "#9999ff",
             "border-color": "#000000",
         },  # orange   #FFA500 changed to purple
     },
@@ -97,6 +97,55 @@ base_cyto_stylesheet = [
         "style": {"line-color": "#A3C4BC"},
     },
 ]
+
+
+def build_state_legend():
+    return html.Div(
+        children=[
+            html.H3("State Indicators"),
+            html.Button(
+                "RUNNING",
+                style={
+                    "background-color": "#00cc99",
+                    "padding": "2px",
+                    "margin": "2px",
+                },
+            ),
+            html.Button(
+                "READY",
+                style={
+                    "background-color": "#ffcc00",
+                    "padding": "2px",
+                    "margin": "2px",
+                },
+            ),
+            html.Button(
+                "BLOCKED",
+                style={
+                    "background-color": "#ff5050",
+                    "padding": "2px",
+                    "margin": "2px",
+                },
+            ),
+            html.Button(
+                "FINISHED",
+                style={
+                    "background-color": "#33cccc",
+                    "padding": "2px",
+                    "margin": "2px",
+                },
+            ),
+            html.Button(
+                "PREEMPTED",
+                style={
+                    "background-color": "#9999ff",
+                    "padding": "2px",
+                    "margin": "2px",
+                },
+            ),
+        ],
+        style={"padding": "20px"},
+    )
 
 
 def build_banner():
@@ -316,6 +365,7 @@ def build_control_panel():
                 children=[build_user_dp(), build_sched_dp()],
             ),
             build_control_buttons(),
+            build_state_legend(),
         ],
         style={
             # "float": "left",
