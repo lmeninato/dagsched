@@ -465,8 +465,9 @@ def render_input_ui(value):
         ]
     # else create custom scheduling tasks data
     return [
-        html.H1("todo - render UI for custom DAG"),
-        daq.NumericInput(id="input-number-users", value=1),
+        html.H1("Input Specifications"),
+        html.H6("Enter Number of Users:"),
+        daq.NumericInput(id="input-number-users", value=1, className="numeric-input"),
         html.Div(id="custom-user-tasks-ui"),
     ]
 
@@ -480,13 +481,15 @@ def render_custom_user_tasks_ui(num_users):
     ui_elements = [
         daq.NumericInput(
             id="input-cluster-cpus",
-            label="Input Number of CPUs:",
+            label="Input Number of CPUs",
             value=10,
+            className="numeric-input",
         ),
         daq.NumericInput(
             id="input-cluster-ram",
-            label="Input GBs of RAMs:",
+            label="Input GBs of RAMs",
             value=20,
+            className="numeric-input",
         ),
     ]
 
@@ -582,8 +585,9 @@ def create_user_task_callbacks(num_tasks, user_form):
                         "user": user_id,
                         "task": task_num,
                     },
-                    label="Input Task Duration:",
+                    label="Input Task Duration",
                     value=5,
+                    className="numeric-input",
                 ),
                 daq.NumericInput(
                     id={
@@ -592,8 +596,9 @@ def create_user_task_callbacks(num_tasks, user_form):
                         "user": user_id,
                         "task": task_num,
                     },
-                    label="Input Task Required CPUs:",
+                    label="Input Task Required CPUs",
                     value=1,
+                    className="numeric-input",
                 ),
                 daq.NumericInput(
                     id={
@@ -602,8 +607,9 @@ def create_user_task_callbacks(num_tasks, user_form):
                         "user": user_id,
                         "task": task_num,
                     },
-                    label="Input Task Required RAM:",
+                    label="Input Task Required RAM",
                     value=1,
+                    className="numeric-input",
                 ),
                 dcc.Dropdown(
                     id={
@@ -615,6 +621,7 @@ def create_user_task_callbacks(num_tasks, user_form):
                     options=[f"task_{i}" for i in range(task_num)],
                     placeholder="Please Select Task Dependencies:",
                     multi=True,
+                    className="numeric-input",
                 ),
             ]
         )
@@ -624,6 +631,7 @@ def create_user_task_callbacks(num_tasks, user_form):
 
 def create_user_task(i):
     return [
+        html.H3("User " + str(i) + "'s Specifications"),
         dcc.Input(
             id={"type": "input-user-name", "user": i},
             type="text",
@@ -633,11 +641,13 @@ def create_user_task(i):
             id={"type": "input-arrival", "user": i},
             label="Input Arrival Time:",
             value=0,
+            className="numeric-input",
         ),
         daq.NumericInput(
             id={"type": "input-num-tasks", "user": i},
             label=f"Input Number of tasks for User {i}",
             value=2,
+            className="numeric-input",
         ),
         html.Div(id={"type": "user-tasks-form", "user": i}),
     ]
