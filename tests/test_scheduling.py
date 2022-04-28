@@ -4,6 +4,7 @@ from src.scheduling import (
     PriorityScheduler,
     PreemptivePriorityScheduler,
     SmallestServiceFirst,
+    ShortestJobFirst,
 )
 from src.read_graph import read_yaml
 
@@ -157,11 +158,33 @@ class TestSmallestServiceFirst(unittest.TestCase):
 
         data = read_yaml("data/simple_prio_dag.yml")
         users = list(data["users"].keys())
-        scheduler = PriorityScheduler(
+        scheduler = SmallestServiceFirst(
             data["cluster"], data["users"], users, deserialize=False
         )
         scheduler.run()
         self.assertEqual(scheduler.time, 86)
+
+
+class TestShortestJobFirst(unittest.TestCase):
+    def setUp(self):
+        data = read_yaml("data/simple_prio_dag.yml")
+        users = list(data["users"].keys())
+        self.scheduler = ShortestJobFirst(
+            data["cluster"], data["users"], users, deserialize=False
+        )
+
+    def test_constructor(self):
+        self.assertEqual(self.scheduler.utilization["cpus"], 0)
+
+    def test_scheduling_run(self):
+
+        data = read_yaml("data/simple_prio_dag.yml")
+        users = list(data["users"].keys())
+        scheduler = ShortestJobFirst(
+            data["cluster"], data["users"], users, deserialize=False
+        )
+        scheduler.run()
+        self.assertEqual(scheduler.time, 75)
 
 
 if __name__ == "__main__":

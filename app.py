@@ -3,6 +3,7 @@ from src.scheduling import (
     PriorityScheduler,
     PreemptivePriorityScheduler,
     SmallestServiceFirst,
+    ShortestJobFirst,
 )
 from src.scheduling_ui import (
     get_scheduling_output,
@@ -118,6 +119,10 @@ app.layout = html.Div(
                                     "label": "Smallest Service First",
                                     "value": "SSF",
                                 },
+                                {
+                                    "label": "Smallest Job First",
+                                    "value": "SJF",
+                                },
                             ],
                             value=["FCFS"],
                         ),
@@ -174,6 +179,8 @@ def perform_scheduling(n_clicks, scheduler_type, dags, users, cluster):
             SCHEDULER = SmallestServiceFirst(cluster, dags, users)
         elif scheduler_type == "PREPRIO":
             SCHEDULER = PreemptivePriorityScheduler(cluster, dags, users)
+        elif scheduler_type == "SJF":
+            SCHEDULER = ShortestJobFirst(cluster, dags, users)
         else:
             logging.error(f"Invalid scheduler selected: {scheduler_type}")
             raise ValueError

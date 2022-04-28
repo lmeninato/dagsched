@@ -471,17 +471,31 @@ class PreemptivePriorityScheduler(PriorityScheduler):
 
 
 def compute_service_size(task):
-    if task.priority is None:
-        task.priority = 1
-
     cpus, ram = task.props["cpus"], task.props["ram"]
 
-    return task.priority * cpus * ram
+    return -cpus * ram
 
 
 class SmallestServiceFirst(PriorityScheduler):
     def __init__(self, cluster, dags, users, deserialize=True):
         super().__init__(cluster, dags, users, deserialize, compute_service_size)
+
+    def run(self):
+        super().run()
+
+    def perform_scheduling_round(self):
+        return super().perform_scheduling_round()
+
+
+def compute_priority_by_duration(task):
+    return -task.props["duration"]
+
+
+class ShortestJobFirst(PriorityScheduler):
+    def __init__(self, cluster, dags, users, deserialize=True):
+        super().__init__(
+            cluster, dags, users, deserialize, compute_priority_by_duration
+        )
 
     def run(self):
         super().run()
