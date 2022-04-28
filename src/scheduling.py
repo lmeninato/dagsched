@@ -18,20 +18,30 @@ class SchedulerHistory:
     # time -> user -> user DAG state at time t
     dags = {}
 
+    # time -> metrics
+    metrics = {}
+
     # times stored
     times = set()
 
-    def add_event(self, t, messages, dags, utilization):
+    def add_event(self, t, messages, dags, utilization, metrics):
         self.times.add(t)
         self.messages[t] = deepcopy(messages)
         self.dags[t] = deepcopy(dags)
         self.utilizations[t] = deepcopy(utilization)
+        self.metrics[t] = deepcopy(metrics)
 
     def get_events_at_time_t(self, t):
         if t not in self.times:
             raise KeyError(f"Time {t} not in scheduler history")
 
         return self.messages[t], self.dags[t], self.utilizations[t]
+
+    def get_metrics(self, t):
+        if t not in self.times:
+            raise KeyError(f"Time {t} not in scheduler history")
+
+        return self.metrics[t]
 
 
 class Scheduler:
@@ -68,10 +78,12 @@ class Scheduler:
 
     def store_history(self, initial=False):
         if initial:
-            self.history.add_event(-1, self.messages, self.dags, self.utilization)
+            self.history.add_event(
+                -1, self.messages, self.dags, self.utilization, self.metrics
+            )
         else:
             self.history.add_event(
-                self.time, self.messages, self.dags, self.utilization
+                self.time, self.messages, self.dags, self.utilization, self.metrics
             )
 
     def get_ready_tasks(self):
