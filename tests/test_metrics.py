@@ -13,7 +13,12 @@ class TestSchedulingMetrics(unittest.TestCase):
         users = list(data["users"].keys())
         scheduler = FCFS(data["cluster"], data["users"], users, deserialize=False)
         scheduler.run()
+        self.scheduler = scheduler
         self.metrics = scheduler.metrics
+
+    def test_history(self):
+        metrics = self.scheduler.history.get_metrics(-1)
+        self.assertEqual(len(metrics.arrivals), 2)
 
     def test_makespan(self):
         ms = self.metrics.get_makespan()
