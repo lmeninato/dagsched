@@ -124,6 +124,7 @@ class Scheduler:
 
         if "dependencies" in task.props:
             for label, _task in dag.tasks.items():
+                label = label.split(",")[-1]
                 if label in task.props["dependencies"]:
                     if _task.status and _task.status != TaskStatus.FINISHED:
                         logging.info(f"Cannot run {task.id} until {_task.id} finishes")
