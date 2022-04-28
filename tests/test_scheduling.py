@@ -43,14 +43,18 @@ class TestFCFS(unittest.TestCase):
         self.assertEqual(self.scheduler.time, 16)
 
     def test_scheduling_history(self):
-        self.assertEqual(len(self.scheduler.history.times), 6)
+        data = read_yaml("data/simple_dag.yml")
+        users = list(data["users"].keys())
+        scheduler = FCFS(data["cluster"], data["users"], users, deserialize=False)
+        scheduler.run()
+        self.assertEqual(len(scheduler.history.times), 6)
 
-        messages, dags, utilization = self.scheduler.history.get_events_at_time_t(0)
+        messages, dags, utilization = scheduler.history.get_events_at_time_t(0)
         self.assertEqual(utilization["cpus"], 12)
         self.assertEqual(len(list(dags.keys())), 2)
         self.assertTrue(len(messages))
 
-        messages, dags, utilization = self.scheduler.history.get_events_at_time_t(16)
+        messages, dags, utilization = scheduler.history.get_events_at_time_t(16)
         self.assertEqual(utilization["cpus"], 0)
         self.assertEqual(len(list(dags.keys())), 2)
         self.assertTrue(len(messages))
@@ -82,7 +86,7 @@ class TestPriorityScheduler(unittest.TestCase):
             data["cluster"], data["users"], users, deserialize=False
         )
         scheduler.run()
-        self.assertEqual(scheduler.time, 75)
+        self.assertEqual(scheduler.time, 86)
 
 
 class TestPreemptivePriorityScheduler(unittest.TestCase):
@@ -157,7 +161,7 @@ class TestSmallestServiceFirst(unittest.TestCase):
             data["cluster"], data["users"], users, deserialize=False
         )
         scheduler.run()
-        self.assertEqual(scheduler.time, 75)
+        self.assertEqual(scheduler.time, 86)
 
 
 if __name__ == "__main__":

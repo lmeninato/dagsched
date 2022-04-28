@@ -9,20 +9,21 @@ import logging
 
 
 class SchedulerHistory:
-    # time -> list of messages at time t
-    messages = {}
+    def __init__(self) -> None:
+        # time -> list of messages at time t
+        self.messages = {}
 
-    # time -> cluster resources used
-    utilizations = {}
+        # time -> cluster resources used
+        self.utilizations = {}
 
-    # time -> user -> user DAG state at time t
-    dags = {}
+        # time -> user -> user DAG state at time t
+        self.dags = {}
 
-    # time -> metrics
-    metrics = {}
+        # time -> metrics
+        self.metrics = {}
 
-    # times stored
-    times = set()
+        # times stored
+        self.times = set()
 
     def add_event(self, t, messages, dags, utilization, metrics):
         self.times.add(t)
@@ -93,6 +94,7 @@ class Scheduler:
                 for label, task in dag.tasks.items():
                     if task.status and task.status in (
                         TaskStatus.READY,
+                        TaskStatus.RUNNING,
                         TaskStatus.FINISHED,
                     ):
                         continue
@@ -127,7 +129,8 @@ class Scheduler:
                 label = label.split(",")[-1]
                 if label in task.props["dependencies"]:
                     if _task.status and _task.status != TaskStatus.FINISHED:
-                        logging.info(f"Cannot run {task.id} until {_task.id} finishes")
+                        _label = task.id.split(",")[-1]
+                        logging.info(f"Cannot run {_label} until {label} finishes")
                         return False
 
         return True
@@ -138,8 +141,9 @@ class Scheduler:
 
         cpus, ram = task.props["cpus"], task.props["ram"]
 
+        task_id = label.split(",")[-1]
         self.logged_message(
-            f"Scheduled {user} task {label} with {cpus} cpus and {ram} ram"
+            f"Scheduled {user} task {task_id} with {cpus} cpus and {ram} ram"
         )
 
         task.status = TaskStatus.RUNNING
@@ -166,8 +170,9 @@ class Scheduler:
             if task.runtime >= task.props["duration"]:
                 task.status = TaskStatus.FINISHED
                 task.end = self.time
+                task_id = label.split(",")[-1]
                 self.logged_message(
-                    f"Finished user: {user} task: {label} at time={self.time}"
+                    f"Finished user: {user} task: {task_id} at time={self.time}"
                 )
                 self.utilization["cpus"] -= task.props["cpus"]
                 self.utilization["ram"] -= task.props["ram"]
@@ -501,11 +506,9 @@ if __name__ == "__main__":
         level=logging.DEBUG,
     )
 
-    data = read_yaml("data/simple_prio_dag.yml")
+    data = read_yaml("data/simple_dag.yml")
     tasks = data["users"]["test_user"]
     dag = DAG(tasks)
     users = list(data["users"].keys())
-    scheduler = PreemptivePriorityScheduler(
-        data["cluster"], data["users"], users, deserialize=False
-    )
+    scheduler = FCFS(data["cluster"], data["users"], users, deserialize=False)
     scheduler.run()
