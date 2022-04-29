@@ -256,6 +256,7 @@ def build_dag_area():
             "padding": "0px",
             "width": "70%",
             "display": "inline-block",
+            "color": "white",
         },
     )
 
@@ -326,7 +327,7 @@ def build_user_dp():
         id="user-dp",
         children=[
             html.H3("Select User"),
-            dcc.Dropdown(id="user-dropdown"),
+            dcc.Dropdown(id="user-dropdown", style={"color": "white"}),
         ],
         style={
             # "width": "20%",
@@ -785,6 +786,12 @@ def build_top_panel(stopped_interval):
             ),
         ],
     )
+
+
+def parseMetricstoCSV():
+    SCHEDULER.get_history_metrics(10)
+    # for every user save metrics
+    # per user save time frame wise data as well.
 
 
 """ Stats Logic Ends"""

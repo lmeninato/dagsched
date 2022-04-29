@@ -77,6 +77,9 @@ class Scheduler:
     def get_history(self, t):
         return self.history.get_events_at_time_t(t)
 
+    def get_history_metrics(self, t):
+        return self.history.get_metrics(t)
+
     def store_history(self, initial=False):
         if initial:
             self.history.add_event(
