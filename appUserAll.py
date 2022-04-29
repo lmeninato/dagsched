@@ -3,6 +3,7 @@ from src.scheduling import (
     PriorityScheduler,
     PreemptivePriorityScheduler,
     SmallestServiceFirst,
+    ShortestJobFirst,
 )
 from src.scheduling_ui import (
     get_scheduling_output,
@@ -205,6 +206,10 @@ def build_sched_dp():
                             {
                                 "label": "Smallest Service First",
                                 "value": "SSF",
+                            },
+                            {
+                                "label": "Smallest Job First",
+                                "value": "SJF",
                             },
                         ],
                         value=["FCFS"],
@@ -789,6 +794,8 @@ def perform_scheduling(n_clicks, scheduler_type, dags, users, cluster):
             SCHEDULER = SmallestServiceFirst(cluster, dags, users)
         elif scheduler_type == "PREPRIO":
             SCHEDULER = PreemptivePriorityScheduler(cluster, dags, users)
+        elif scheduler_type == "SJF":
+            SCHEDULER = ShortestJobFirst(cluster, dags, users)
         else:
             logging.error(f"Invalid scheduler selected: {scheduler_type}")
             raise ValueError
@@ -1155,6 +1162,7 @@ def update_scheduling_tasks_from_sample(path):
     Input("user-dropdown", "value"),
     Input("session-dags", "data"),
     State("session-users", "data"),
+    prevent_initial_call=True,
 )
 def update_shown_dag(value, dags, users):
     index = None
