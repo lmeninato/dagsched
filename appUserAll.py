@@ -9,6 +9,7 @@ from src.scheduling_ui import (
     get_scheduling_output,
     render_scheduling_messages,
     render_utilization,
+    generate_section_banner,
 )
 from src.dag import DAG
 from src.read_graph import parse_contents, read_yaml
@@ -270,10 +271,19 @@ def build_run_btn():
 def build_text_output():
     return html.Div(
         id="scheduling-output-pdiv",
-        children=[html.H3("Scheduling Output"), html.Div(id="scheduling-output")],
+        children=[
+            html.Hr(className="rounded"),
+            html.H3("Scheduler Output"),
+            html.Hr(className="rounded"),
+            html.Div(
+                id="scheduling-output",
+            ),
+        ],
         style={
             "display": "inline-block",
-            "width": "40%",
+            "width": "20%",
+            "float": "right",
+            "padding": "10px",
         },
     )
 
@@ -281,17 +291,33 @@ def build_text_output():
 def build_metrics_board():
     return html.Div(
         id="metrics-pdiv",
-        children=[html.H3("Metrics Board"), html.Div(id="metric-output")],
+        children=[
+            # <hr class="rounded">
+            html.Hr(className="rounded"),
+            html.H3("Metrics Board"),
+            html.Hr(className="rounded"),
+            html.Div(
+                id="metric-output",
+                children=[
+                    build_running_stats_board(),
+                ],
+            ),
+        ],
         style={
             "display": "inline-block",
-            "width": "40%",
+            "width": "75%",
+            "padding": "10px",
         },
     )
 
 
 def build_sched_output():
     return html.Div(
-        id="all-ouput", children=[build_text_output(), build_metrics_board()]
+        id="all-ouput",
+        children=[
+            build_metrics_board(),
+            build_text_output(),
+        ],
     )
 
 
@@ -349,6 +375,13 @@ def build_control_buttons():
                         ),
                         style={"padding": "5px 0px"},
                     ),
+                    html.Div(
+                        children=[
+                            html.H4("View Stages of Perfomed Scheduling"),
+                            html.Button(id="decrease-time", n_clicks=0, children="<<"),
+                            html.Button(id="increase-time", n_clicks=0, children=">>"),
+                        ]
+                    ),
                 ]
             ),
         ],
@@ -392,7 +425,6 @@ def build_tab2():
             build_control_panel(),
             build_dag_area(),
             build_sched_output(),
-            build_running_stats_board(),
         ],
     )
 
@@ -532,10 +564,6 @@ def build_final_stats_boards():
             ),
         ],
     )
-
-
-def generate_section_banner(title):
-    return html.Div(className="section-banner", children=title)
 
 
 # Build header
@@ -742,6 +770,7 @@ def build_top_panel(stopped_interval):
                         ],
                     ),
                 ],
+                style={"width": "77%"},
             ),
             # Piechart
             html.Div(
@@ -750,7 +779,9 @@ def build_top_panel(stopped_interval):
                 children=[
                     generate_section_banner("Global Summmary"),
                     # next div below
+                    html.Div(id="scheduling-utilization"),
                 ],
+                style={"width": "15%"},
             ),
         ],
     )
@@ -1201,10 +1232,10 @@ def displayMouseOverNodeData(stylesheet, data):
             "text-wrap": "wrap",
             "text-valign": "bottom",
             "text-halign": "center",
-            "border-color": "purple",
+            "border-color": "#ff9900",
             "border-width": 2,
             "border-opacity": 1,
-            "color": "#B10DC9",
+            "color": "#ff9900",
             "text-opacity": 1,
             "font-size": 8,
             "z-index": 9999,

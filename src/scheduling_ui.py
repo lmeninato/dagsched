@@ -4,6 +4,10 @@ from scheduling import Scheduler
 from dash import html
 
 
+def generate_section_banner(title):
+    return html.Div(className="section-banner", children=title)
+
+
 def get_scheduling_output(scheduler: Scheduler):
     if scheduler is None:
         return [
@@ -21,16 +25,33 @@ def get_scheduling_output(scheduler: Scheduler):
         possible_times += [{"label": f"Time={i}", "value": i} for i in times[1:]]
 
     return [
+        html.H5("Output Logs"),
+        generate_section_banner("Select Time Instance"),
+        html.Br(),
         dcc.Dropdown(
             id="scheduling-times-dropdown",
             options=possible_times,
             value=-1,
         ),
-        html.Div(id="scheduling-messages"),
-        html.Div(id="scheduling-utilization"),
-        html.Button(id="increase-time", n_clicks=0, children=">>"),
-        html.Button(id="decrease-time", n_clicks=0, children="<<"),
+        html.Br(),
+        build_output_messages(),
+        # html.Button(id="increase-time", n_clicks=0, children=">>"),
+        # html.Button(id="decrease-time", n_clicks=0, children="<<"),
     ]
+
+
+def build_output_messages():
+    return html.Div(
+        id="scheduling-messages",
+        style={
+            "background-color": "#333399",
+            "width": "100%",
+            "height": "200px",
+            "border": "1px solid black",
+            "overflow": "scroll",
+            "float": "right",
+        },
+    )
 
 
 def render_scheduling_messages(messages):
