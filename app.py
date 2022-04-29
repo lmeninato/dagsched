@@ -601,4 +601,4 @@ def displayMouseOverNodeData(stylesheet, data):
     return stylesheet
 
 
-app.run_server(debug=True)
+app.run_server(debug=True, port=8051)
