@@ -44,6 +44,9 @@ class SchedulerHistory:
 
         return self.metrics[t]
 
+    def get_all_metrics(self):
+        return self.metrics
+
 
 class Scheduler:
     """
@@ -77,7 +80,10 @@ class Scheduler:
     def get_history(self, t):
         return self.history.get_events_at_time_t(t)
 
-    def get_history_metrics(self, t):
+    def get_history_metrics(self):
+        return self.history.get_all_metrics()
+
+    def get_history_metrics_at_t(self, t):
         return self.history.get_metrics(t)
 
     def store_history(self, initial=False):

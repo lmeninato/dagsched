@@ -108,3 +108,6 @@ class SchedulingMetrics:
             queue_times.append(queue_time)
 
         return local_func(queue_times)
+
+    def get_premeptions():
+        print(preemptions)

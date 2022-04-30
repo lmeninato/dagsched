@@ -44,7 +44,7 @@ def build_output_messages():
     return html.Div(
         id="scheduling-messages",
         style={
-            "background-color": "#333399",
+            "background-color": "#3d3d5c",
             "width": "100%",
             "height": "200px",
             "border": "1px solid black",
@@ -62,3 +62,8 @@ def render_utilization(cluster, utilization):
     cpu_usage = f"Using {utilization['cpus']} out of {cluster['cpus']} cpus"
     ram_usage = f"Using {utilization['ram']} out of {cluster['ram']} ram"
     return [html.P(cpu_usage), html.P(ram_usage)]
+
+
+"""def getMetricsDF(scheduler: Scheduler):
+    print("in get metrics")
+    print(Scheduler.get_history_metrics())"""
