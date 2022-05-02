@@ -3,6 +3,7 @@ from src.scheduling import (
     PriorityScheduler,
     PreemptivePriorityScheduler,
     SmallestServiceFirst,
+    ShortestJobFirst,
 )
 from src.scheduling_ui import (
     get_scheduling_output,
@@ -118,6 +119,10 @@ app.layout = html.Div(
                                     "label": "Smallest Service First",
                                     "value": "SSF",
                                 },
+                                {
+                                    "label": "Smallest Job First",
+                                    "value": "SJF",
+                                },
                             ],
                             value=["FCFS"],
                         ),
@@ -174,6 +179,8 @@ def perform_scheduling(n_clicks, scheduler_type, dags, users, cluster):
             SCHEDULER = SmallestServiceFirst(cluster, dags, users)
         elif scheduler_type == "PREPRIO":
             SCHEDULER = PreemptivePriorityScheduler(cluster, dags, users)
+        elif scheduler_type == "SJF":
+            SCHEDULER = ShortestJobFirst(cluster, dags, users)
         else:
             logging.error(f"Invalid scheduler selected: {scheduler_type}")
             raise ValueError
@@ -459,6 +466,7 @@ def create_user_task(i):
 def get_users_in_session(time_stamp, data):
     if data:
         users = [user["name"] for user in data]
+        users = ["All Users"] + users
         return users, users[0]
     return None, None
 
@@ -529,11 +537,18 @@ def update_scheduling_tasks_from_sample(path):
     Input("user-dropdown", "value"),
     Input("session-dags", "data"),
     State("session-users", "data"),
+    prevent_initial_call=True,
 )
 def update_shown_dag(value, dags, users):
     index = None
     if not users:
         return []
+    if value == "All Users":
+        elements = []
+        for _, dag in dags.items():
+            current_dag = DAG(dag, deserialize=True)
+            elements += current_dag.render_state()
+        return elements
     for i, user in enumerate(users):
         if user["name"] == value:
             index = i
@@ -552,7 +567,7 @@ def update_shown_dag(value, dags, users):
         Input("cytoscape-elements-callbacks", "mouseoverNodeData"),
     ],
 )
-def displayTapNodeData(stylesheet, data):
+def displayMouseOverNodeData(stylesheet, data):
     style = {
         "selector": "node",
         "style": {
@@ -571,16 +586,19 @@ def displayTapNodeData(stylesheet, data):
         },
     }
 
-    if data:
-        base_stylesheet = base_cyto_stylesheet
-        style["selector"] = f"node[label = \"{data['label']}\"]"
-        style["style"][
-            "label"
-        ] = f"{data['label']}\nDuration: {data['duration']}\nCPUs: {data['cpus']}\nRAM: {data['ram']}"  # noqa
+    if not data or "parent" not in data:
+        # no need to style compound nodes on hover:
+        return stylesheet
 
-        stylesheet = base_stylesheet + [style]
+    base_stylesheet = base_cyto_stylesheet
+    style["selector"] = f"node[id = \"{data['id']}\"]"
+    style["style"][
+        "label"
+    ] = f"{data['label']}\nDuration: {data['duration']}\nCPUs: {data['cpus']}\nRAM: {data['ram']}"  # noqa
+
+    stylesheet = base_stylesheet + [style]
 
     return stylesheet
 
 
-app.run_server(debug=True)
+app.run_server(debug=True, port=8051)

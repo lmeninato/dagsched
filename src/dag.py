@@ -72,12 +72,18 @@ class DAG:
         self.name = dag["name"]
         self.arrival_time = dag["arrival_time"]
         self.tasks = {}
+        self.nodes.append(
+            {"data": {"id": self.name, "label": self.name}, "classes": "parent"}
+        )
 
         if deserialize:
             # if the task came from Dash, we need to
             # deserialize it, hence this ugly mess
             for node in dag["nodes"]:
                 data = node["data"]
+                if "classes" in node and node["classes"] == "parent":
+                    # skip parent nodes to construct compound nodes
+                    continue
                 name = data["id"]
                 if name in dag["tasks"]:
                     status = dag["tasks"][name]["status"]
@@ -90,15 +96,20 @@ class DAG:
             self.add_task(name, task)
 
     def add_task(self, name, task):
+        if self.name not in name:
+            name = f"{self.name},{name}"
         task = Task(name, task)
         self.tasks[name] = task
 
         props = task.get_props()
+        props["parent"] = self.name
         node = {"data": props}
         self.nodes.append(node)
 
         if "dependencies" in props and props["dependencies"]:
             for dependency in props["dependencies"]:
+                if self.name not in dependency:
+                    dependency = f"{self.name},{dependency}"
                 edge = {"data": {"source": dependency, "target": name}}
                 self.edges.append(edge)
 

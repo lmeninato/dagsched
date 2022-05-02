@@ -9,29 +9,40 @@ import logging
 
 
 class SchedulerHistory:
-    # time -> list of messages at time t
-    messages = {}
+    def __init__(self) -> None:
+        # time -> list of messages at time t
+        self.messages = {}
 
-    # time -> cluster resources used
-    utilizations = {}
+        # time -> cluster resources used
+        self.utilizations = {}
 
-    # time -> user -> user DAG state at time t
-    dags = {}
+        # time -> user -> user DAG state at time t
+        self.dags = {}
 
-    # times stored
-    times = set()
+        # time -> metrics
+        self.metrics = {}
 
-    def add_event(self, t, messages, dags, utilization):
+        # times stored
+        self.times = set()
+
+    def add_event(self, t, messages, dags, utilization, metrics):
         self.times.add(t)
         self.messages[t] = deepcopy(messages)
         self.dags[t] = deepcopy(dags)
         self.utilizations[t] = deepcopy(utilization)
+        self.metrics[t] = deepcopy(metrics)
 
     def get_events_at_time_t(self, t):
         if t not in self.times:
             raise KeyError(f"Time {t} not in scheduler history")
 
         return self.messages[t], self.dags[t], self.utilizations[t]
+
+    def get_metrics(self, t):
+        if t not in self.times:
+            raise KeyError(f"Time {t} not in scheduler history")
+
+        return self.metrics[t]
 
 
 class Scheduler:
@@ -68,10 +79,12 @@ class Scheduler:
 
     def store_history(self, initial=False):
         if initial:
-            self.history.add_event(-1, self.messages, self.dags, self.utilization)
+            self.history.add_event(
+                -1, self.messages, self.dags, self.utilization, self.metrics
+            )
         else:
             self.history.add_event(
-                self.time, self.messages, self.dags, self.utilization
+                self.time, self.messages, self.dags, self.utilization, self.metrics
             )
 
     def get_ready_tasks(self):
@@ -81,6 +94,7 @@ class Scheduler:
                 for label, task in dag.tasks.items():
                     if task.status and task.status in (
                         TaskStatus.READY,
+                        TaskStatus.RUNNING,
                         TaskStatus.FINISHED,
                     ):
                         continue
@@ -112,9 +126,11 @@ class Scheduler:
 
         if "dependencies" in task.props:
             for label, _task in dag.tasks.items():
+                label = label.split(",")[-1]
                 if label in task.props["dependencies"]:
                     if _task.status and _task.status != TaskStatus.FINISHED:
-                        logging.info(f"Cannot run {task.id} until {_task.id} finishes")
+                        _label = task.id.split(",")[-1]
+                        logging.info(f"Cannot run {_label} until {label} finishes")
                         return False
 
         return True
@@ -125,8 +141,9 @@ class Scheduler:
 
         cpus, ram = task.props["cpus"], task.props["ram"]
 
+        task_id = label.split(",")[-1]
         self.logged_message(
-            f"Scheduled {user} task {label} with {cpus} cpus and {ram} ram"
+            f"Scheduled {user} task {task_id} with {cpus} cpus and {ram} ram"
         )
 
         task.status = TaskStatus.RUNNING
@@ -153,8 +170,9 @@ class Scheduler:
             if task.runtime >= task.props["duration"]:
                 task.status = TaskStatus.FINISHED
                 task.end = self.time
+                task_id = label.split(",")[-1]
                 self.logged_message(
-                    f"Finished user: {user} task: {label} at time={self.time}"
+                    f"Finished user: {user} task: {task_id} at time={self.time}"
                 )
                 self.utilization["cpus"] -= task.props["cpus"]
                 self.utilization["ram"] -= task.props["ram"]
@@ -453,17 +471,31 @@ class PreemptivePriorityScheduler(PriorityScheduler):
 
 
 def compute_service_size(task):
-    if task.priority is None:
-        task.priority = 1
-
     cpus, ram = task.props["cpus"], task.props["ram"]
 
-    return task.priority * cpus * ram
+    return -cpus * ram
 
 
 class SmallestServiceFirst(PriorityScheduler):
     def __init__(self, cluster, dags, users, deserialize=True):
         super().__init__(cluster, dags, users, deserialize, compute_service_size)
+
+    def run(self):
+        super().run()
+
+    def perform_scheduling_round(self):
+        return super().perform_scheduling_round()
+
+
+def compute_priority_by_duration(task):
+    return -task.props["duration"]
+
+
+class ShortestJobFirst(PriorityScheduler):
+    def __init__(self, cluster, dags, users, deserialize=True):
+        super().__init__(
+            cluster, dags, users, deserialize, compute_priority_by_duration
+        )
 
     def run(self):
         super().run()
@@ -488,11 +520,9 @@ if __name__ == "__main__":
         level=logging.DEBUG,
     )
 
-    data = read_yaml("data/simple_prio_dag.yml")
+    data = read_yaml("data/simple_dag.yml")
     tasks = data["users"]["test_user"]
     dag = DAG(tasks)
     users = list(data["users"].keys())
-    scheduler = PreemptivePriorityScheduler(
-        data["cluster"], data["users"], users, deserialize=False
-    )
+    scheduler = FCFS(data["cluster"], data["users"], users, deserialize=False)
     scheduler.run()

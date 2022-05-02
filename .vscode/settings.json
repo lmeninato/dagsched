@@ -4,4 +4,8 @@
     "python.linting.flake8Enabled": true,
     "python.linting.enabled": true,
     "python.formatting.provider": "black"
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> d0409f7dcbe9c2a45cc86da1d28b337de6386caa
