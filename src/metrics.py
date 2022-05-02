@@ -20,7 +20,10 @@ class SchedulingMetrics:
             self.arrivals[user] = dag.arrival_time
             for task_id in dag.tasks.keys():
                 self.preemptions[user][task_id] = 0
-                self.job_completion_time[user][task_id] = {}
+                self.job_completion_time[user][task_id] = {
+                    "start": float("inf"),
+                    "end": float("inf"),
+                }
                 self.job_queue_time[user][task_id] = 0
 
     def store_preemption(self, user, task):
