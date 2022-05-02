@@ -9,7 +9,11 @@ from src.scheduling_ui import (
     get_scheduling_output,
     render_scheduling_messages,
     render_utilization,
+    generate_section_banner,
+    # getMetricsDF,
 )
+
+
 from src.dag import DAG
 from src.read_graph import parse_contents, read_yaml
 
@@ -25,10 +29,30 @@ import dash_cytoscape as cyto
 import logging
 import glob
 
+
 import os
 import pathlib
 import pandas as pd
 import plotly.graph_objs as go
+
+
+APP_PATH = str(pathlib.Path(__file__).parent.resolve())
+df = pd.read_csv(os.path.join(APP_PATH, os.path.join("data", "policies.csv")))
+userdf = pd.read_csv(os.path.join(APP_PATH, os.path.join("data", "users.csv")))
+
+params = list(df)
+max_length = len(df)
+
+users = list(userdf)
+suffix_row = "_row"
+suffix_button_id = "_button"
+suffix_sparkline_graph = "_sparkline_graph"
+suffix_count = "_count"
+suffix_ooc_n = "_OOC_number"
+suffix_ooc_g = "_OOC_graph"
+suffix_indicator = "_indicator"
+suffix_test = "_testing"
+
 
 logging.basicConfig(
     format="%(asctime)s %(levelname)s: %(message)s",
@@ -255,6 +279,7 @@ def build_dag_area():
             "padding": "0px",
             "width": "70%",
             "display": "inline-block",
+            "color": "white",
         },
     )
 
@@ -270,10 +295,19 @@ def build_run_btn():
 def build_text_output():
     return html.Div(
         id="scheduling-output-pdiv",
-        children=[html.H3("Scheduling Output"), html.Div(id="scheduling-output")],
+        children=[
+            html.Hr(className="rounded"),
+            html.H3("Scheduler Output"),
+            html.Hr(className="rounded"),
+            html.Div(
+                id="scheduling-output",
+            ),
+        ],
         style={
             "display": "inline-block",
-            "width": "40%",
+            "width": "20%",
+            "float": "right",
+            "padding": "10px",
         },
     )
 
@@ -281,17 +315,33 @@ def build_text_output():
 def build_metrics_board():
     return html.Div(
         id="metrics-pdiv",
-        children=[html.H3("Metrics Board"), html.Div(id="metric-output")],
+        children=[
+            # <hr class="rounded">
+            html.Hr(className="rounded"),
+            html.H3("Metrics Board"),
+            html.Hr(className="rounded"),
+            html.Div(
+                id="metric-output",
+                children=[
+                    build_running_stats_board(),
+                ],
+            ),
+        ],
         style={
             "display": "inline-block",
-            "width": "40%",
+            "width": "75%",
+            "padding": "10px",
         },
     )
 
 
 def build_sched_output():
     return html.Div(
-        id="all-ouput", children=[build_text_output(), build_metrics_board()]
+        id="all-ouput",
+        children=[
+            build_metrics_board(),
+            build_text_output(),
+        ],
     )
 
 
@@ -300,7 +350,7 @@ def build_user_dp():
         id="user-dp",
         children=[
             html.H3("Select User"),
-            dcc.Dropdown(id="user-dropdown"),
+            dcc.Dropdown(id="user-dropdown", style={"color": "white"}),
         ],
         style={
             # "width": "20%",
@@ -349,6 +399,13 @@ def build_control_buttons():
                         ),
                         style={"padding": "5px 0px"},
                     ),
+                    html.Div(
+                        children=[
+                            html.H4("View Stages of Perfomed Scheduling"),
+                            html.Button(id="decrease-time", n_clicks=0, children="<<"),
+                            html.Button(id="increase-time", n_clicks=0, children=">>"),
+                        ]
+                    ),
                 ]
             ),
         ],
@@ -392,7 +449,6 @@ def build_tab2():
             build_control_panel(),
             build_dag_area(),
             build_sched_output(),
-            build_running_stats_board(),
         ],
     )
 
@@ -405,28 +461,41 @@ def build_tabs():
     )
 
 
+def build_final_stats_boards():
+    return html.Div(
+        id="fsb",
+        className="fsb",
+        children=[
+            html.Div(
+                id="fsb-text",
+                children=[
+                    html.H5("FInal Summary of Scheduling Run"),
+                ],
+            ),
+            html.Div(
+                id="fsb-logo",
+                children=[
+                    html.A(
+                        html.Button(children="Save"),
+                        href="https://plotly.com/get-demo/",
+                    ),
+                ],
+            ),
+        ],
+    )
+
+
+def parseMetricstoCSV():
+    SCHEDULER.get_history_metrics(10)
+    # for every user save metrics
+    # per user save time frame wise data as well.
+
+
 """Statistic Metrics"""
 
 
-APP_PATH = str(pathlib.Path(__file__).parent.resolve())
-df = pd.read_csv(os.path.join(APP_PATH, os.path.join("data", "policies.csv")))
-userdf = pd.read_csv(os.path.join(APP_PATH, os.path.join("data", "users.csv")))
-
-params = list(df)
-max_length = len(df)
-
-users = list(userdf)
-suffix_row = "_row"
-suffix_button_id = "_button"
-suffix_sparkline_graph = "_sparkline_graph"
-suffix_count = "_count"
-suffix_ooc_n = "_OOC_number"
-suffix_ooc_g = "_OOC_graph"
-suffix_indicator = "_indicator"
-suffix_test = "_testing"
-
-
 def init_df():
+    # change this to create metrics as required
     ret = {}
     for col in list(df[1:]):
         data = df[col]
@@ -474,87 +543,8 @@ def populate_ooc(data, ucl, lcl):
 state_dict = init_df()  # use this logic to get the metric measures
 
 
-def init_value_setter_store():
-    # Initialize store data
-    state_dict = init_df()
-    return state_dict
-
-
-def build_running_stats_board():
-    return html.Div(
-        id="rsb",
-        className="rsb",
-        children=[
-            html.Div(
-                id="rsb-text",
-                children=[
-                    html.H5("Running Statistics"),
-                ],
-            ),
-            html.Div(
-                id="rsb-logo",  # save local and global stats with a single button
-                children=[
-                    build_top_panel(1),
-                    html.Div(
-                        children=[
-                            html.A(
-                                html.Button(children="Save"),
-                                href="https://plotly.com/get-demo/",
-                            ),
-                        ],
-                        style={"float": "right"},
-                    ),
-                ],
-            ),
-        ],
-    )
-
-
-def build_final_stats_boards():
-    return html.Div(
-        id="fsb",
-        className="fsb",
-        children=[
-            html.Div(
-                id="fsb-text",
-                children=[
-                    html.H5("FInal Summary of Scheduling Run"),
-                ],
-            ),
-            html.Div(
-                id="fsb-logo",
-                children=[
-                    html.A(
-                        html.Button(children="Save"),
-                        href="https://plotly.com/get-demo/",
-                    ),
-                ],
-            ),
-        ],
-    )
-
-
-def generate_section_banner(title):
-    return html.Div(className="section-banner", children=title)
-
-
-# Build header
-def generate_metric_list_header():
-    return generate_metric_row(
-        "metric_header",
-        {"height": "3rem", "margin": "1rem 0", "textAlign": "center"},
-        {"id": "m_header_1", "children": html.Div("User")},
-        {"id": "m_header_2", "children": html.Div("Jobs")},
-        {"id": "m_header_3", "children": html.Div("CPU Utilization")},
-        {"id": "m_header_4", "children": html.Div("IO Utilization")},
-        {"id": "m_header_5", "children": html.Div("Total Turnaround Time")},
-        {"id": "m_header_6", "children": html.Div("Avg. Wait Time")},
-        {"id": "m_header_7", "children": html.Div("TestCol")},
-    )
-
-
 def generate_metric_row_helper(stopped_interval, index):
-    print(params)
+    # print(params)
     item = params[index]
 
     div_id = item + suffix_row
@@ -565,7 +555,9 @@ def generate_metric_row_helper(stopped_interval, index):
     ooc_graph_id = item + suffix_ooc_g
     indicator_id = item + suffix_indicator
     test_id = item + suffix_test
-    print(test_id)
+
+    # put metrics into df dump here
+    # print(test_id)
 
     return generate_metric_row(
         div_id,
@@ -584,6 +576,7 @@ def generate_metric_row_helper(stopped_interval, index):
         {"id": count_id, "children": "0"},
         {
             "id": item + "_sparkline",
+            # add time interval wise data here for params
             "children": dcc.Graph(
                 id=sparkline_graph_id,
                 style={"width": "100%", "height": "95%"},
@@ -652,7 +645,7 @@ def generate_metric_row_helper(stopped_interval, index):
         },
         {
             "id": item + "_test",
-            "children": daq.Indicator(id=test_id, value=True, color="#91dfd2", size=12),
+            "children": daq.Indicator(id=test_id, value=True, color="#10dfd2", size=12),
         },
     )
 
@@ -712,6 +705,31 @@ def generate_metric_row(id, style, col1, col2, col3, col4, col5, col6, col7):
     )
 
 
+def build_user_stat_rows(stopped_interval, usrcount):
+    print("in buc")
+    # print("sched metrics", SCHEDULER.get_history_metrics(10))
+    divlist = []
+    for c in range(1, usrcount + 1):
+        divlist.append(generate_metric_row_helper(stopped_interval, c))
+    # print(divlist)
+    return divlist
+
+
+# Build header
+def generate_metric_list_header():
+    return generate_metric_row(
+        "metric_header",
+        {"height": "3rem", "margin": "1rem 0", "textAlign": "center"},
+        {"id": "m_header_1", "children": html.Div("User")},
+        {"id": "m_header_2", "children": html.Div("Jobs")},
+        {"id": "m_header_3", "children": html.Div("Arrivals")},
+        {"id": "m_header_4", "children": html.Div("Preemptions")},
+        {"id": "m_header_5", "children": html.Div("Job Completion Time")},
+        {"id": "m_header_6", "children": html.Div("Job Queue Time")},
+        {"id": "m_header_7", "children": html.Div("TestCol")},
+    )
+
+
 def build_top_panel(stopped_interval):
     return html.Div(
         id="top-section-container",
@@ -729,27 +747,68 @@ def build_top_panel(stopped_interval):
                             generate_metric_list_header(),
                             html.Div(
                                 id="metric-rows",
-                                children=[
-                                    generate_metric_row_helper(stopped_interval, 1),
-                                    generate_metric_row_helper(stopped_interval, 2),
-                                    generate_metric_row_helper(stopped_interval, 3),
-                                    generate_metric_row_helper(stopped_interval, 4),
-                                    generate_metric_row_helper(stopped_interval, 5),
-                                    generate_metric_row_helper(stopped_interval, 6),
-                                    generate_metric_row_helper(stopped_interval, 7),
-                                ],
+                                children=build_user_stat_rows(stopped_interval, 7),
                             ),
                         ],
                     ),
                 ],
+                style={"width": "77%"},
             ),
             # Piechart
             html.Div(
                 id="ooc-piechart-outer",
                 className="four columns",
                 children=[
-                    generate_section_banner("Global Summmary"),
+                    generate_section_banner("Global Summary"),
                     # next div below
+                    html.Div(id="scheduling-utilization"),
+                ],
+                style={"width": "15%"},
+            ),
+        ],
+    )
+
+
+def getMetricsDFA():
+    from pdb import set_trace
+
+    print("in get metrics")
+    # print()
+    for m in SCHEDULER.get_history_metrics().values():
+        set_trace()
+        print("Q time:", m.get_queuing_time())
+        # print(" Local Q time:", m.get_local_queuing_time())
+        # print("Local jct", m.get_local_jct())
+        print("Global JCT ", m.get_jct())
+        # print("Makespans", m.get_local_makespan())
+        # print("premetions:", m.get_premeptions())
+
+
+def build_running_stats_board():
+
+    return html.Div(
+        id="rsb",
+        className="rsb",
+        children=[
+            html.Div(
+                id="rsb-text",
+                children=[
+                    html.H5("Running Statistics"),
+                ],
+            ),
+            html.Div(
+                id="rsb-logo",  # save local and global stats with a single button
+                children=[
+                    build_top_panel(1),
+                    html.Div(
+                        children=[
+                            html.A(
+                                html.Button(children="Save"),
+                                href="https://plotly.com/get-demo/",
+                            ),
+                        ],
+                        style={"float": "right"},
+                    ),
                 ],
             ),
         ],
@@ -802,6 +861,7 @@ def perform_scheduling(n_clicks, scheduler_type, dags, users, cluster):
 
         if SCHEDULER:
             SCHEDULER.run()
+            #getMetricsDFA()
     except Exception:
         SCHEDULER = None
 
@@ -1201,10 +1261,10 @@ def displayMouseOverNodeData(stylesheet, data):
             "text-wrap": "wrap",
             "text-valign": "bottom",
             "text-halign": "center",
-            "border-color": "purple",
+            "border-color": "#ff9900",
             "border-width": 2,
             "border-opacity": 1,
-            "color": "#B10DC9",
+            "color": "#ff9900",
             "text-opacity": 1,
             "font-size": 8,
             "z-index": 9999,
@@ -1226,6 +1286,4 @@ def displayMouseOverNodeData(stylesheet, data):
     return stylesheet
 
 
-# dont change the port number, just do sudo pkill python3
-# if you need to kill all instances of this server
-app.run_server(debug=True, port=8050)
+app.run_server(debug=True)
