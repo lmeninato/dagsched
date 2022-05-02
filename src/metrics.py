@@ -3,19 +3,19 @@ from collections import defaultdict
 
 
 class SchedulingMetrics:
-    # for each user, store the arrival time
-    arrivals = {}
-
-    # for each user, for each job, track number of preemptions
-    preemptions = defaultdict(dict)
-
-    # for each user, for each job, track job duration
-    job_completion_time = defaultdict(dict)
-
-    # for each user, for each job, track job queuing time
-    job_queue_time = defaultdict(dict)
-
     def __init__(self, dags):
+        # for each user, store the arrival time
+        self.arrivals = {}
+
+        # for each user, for each job, track number of preemptions
+        self.preemptions = defaultdict(dict)
+
+        # for each user, for each job, track job duration
+        self.job_completion_time = defaultdict(dict)
+
+        # for each user, for each job, track job queuing time
+        self.job_queue_time = defaultdict(dict)
+
         for user, dag in dags.items():
             self.arrivals[user] = dag.arrival_time
             for task_id in dag.tasks.keys():

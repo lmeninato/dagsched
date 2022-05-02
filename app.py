@@ -1226,4 +1226,6 @@ def displayMouseOverNodeData(stylesheet, data):
     return stylesheet
 
 
-app.run_server(debug=True)
+# dont change the port number, just do sudo pkill python3
+# if you need to kill all instances of this server
+app.run_server(debug=True, port=8050)

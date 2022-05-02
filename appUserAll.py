@@ -770,9 +770,12 @@ def build_top_panel(stopped_interval):
 
 
 def getMetricsDFA():
+    from pdb import set_trace
+
     print("in get metrics")
     # print()
     for m in SCHEDULER.get_history_metrics().values():
+        set_trace()
         print("Q time:", m.get_queuing_time())
         # print(" Local Q time:", m.get_local_queuing_time())
         # print("Local jct", m.get_local_jct())
