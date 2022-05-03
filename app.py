@@ -12,15 +12,14 @@ from src.scheduling_ui import (
     render_scheduling_messages,
     generate_section_banner,
 )
-
+from src.metrics_ui import get_metrics_table
 
 from src.dag import DAG
 from src.read_graph import parse_contents, read_yaml
 
-from dash import dcc
+from dash import dcc, dash_table, html, MATCH, ALL
 
 import dash_daq as daq
-from dash import html, MATCH, ALL
 from dash_extensions.enrich import DashProxy, MultiplexerTransform, Input, Output, State
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
@@ -621,12 +620,24 @@ def build_top_panel(stopped_interval):
                     generate_section_banner(
                         "Schedule Policy Execution Metrics Summary"
                     ),
-                    html.Div(
-                        id="metric-div",
-                        children=[
-                            generate_metric_list_header(),
-                            html.Div(id="metric-rows"),
+                    dash_table.DataTable(
+                        id="metrics-tbl",
+                        style_cell_conditional=[
+                            {"if": {"column_id": c}, "textAlign": "left"}
+                            for c in ["User"]
                         ],
+                        style_data={"color": "black", "backgroundColor": "white"},
+                        style_data_conditional=[
+                            {
+                                "if": {"row_index": "odd"},
+                                "backgroundColor": "rgb(220, 220, 220)",
+                            }
+                        ],
+                        style_header={
+                            "backgroundColor": "rgb(210, 210, 210)",
+                            "color": "black",
+                            "fontWeight": "bold",
+                        },
                     ),
                 ],
                 style={"width": "60%"},
@@ -725,40 +736,40 @@ def render_utilization(cluster, utilization):
     ]
 
 
-def render_global_metrics(cluster, metrics_t):
+# def render_global_metrics(cluster, metrics_t):
 
-    # queing_time = f"Queing_time:  {metrics_t.get_queuing_time()}"
-    completion_time = str(metrics_t.get_jct())
-    makespan = str(metrics_t.get_makespan())
-    if completion_time == "nan":
-        print("came here nan")
-        completion_time = -1.0
+#     # queing_time = f"Queing_time:  {metrics_t.get_queuing_time()}"
+#     completion_time = str(metrics_t.get_jct())
+#     makespan = str(metrics_t.get_makespan())
+#     if completion_time == "nan":
+#         print("came here nan")
+#         completion_time = -1.0
 
-    elif completion_time == "inf":
-        print("came here inf")
-        completion_time = 9999.0
-    else:
-        completion_time = metrics_t.get_jct()
+#     elif completion_time == "inf":
+#         print("came here inf")
+#         completion_time = 9999.0
+#     else:
+#         completion_time = metrics_t.get_jct()
 
-    if makespan == "nan":
-        print("came here nan 2")
-        makespan = -1.0
+#     if makespan == "nan":
+#         print("came here nan 2")
+#         makespan = -1.0
 
-    elif makespan == "inf":
-        print("came here inf")
-        makespan = 9999.0
-    else:
-        makespan = metrics_t.get_makespan()
+#     elif makespan == "inf":
+#         print("came here inf")
+#         makespan = 9999.0
+#     else:
+#         makespan = metrics_t.get_makespan()
 
-    return [
-        # html.H4(" GLobal Metrics"),
-        generate_ledbox2("Queing Time", metrics_t.get_queuing_time()),
-        generate_ledbox2("Job Completion Time", completion_time),
-        generate_ledbox2("DAG make-span", makespan),
-        # html.P(queing_time),
-        # html.P(completion_time),
-        # html.P(makespan),
-    ]
+#     return [
+#         # html.H4(" GLobal Metrics"),
+#         generate_ledbox2("Queing Time", metrics_t.get_queuing_time()),
+#         generate_ledbox2("Job Completion Time", completion_time),
+#         generate_ledbox2("DAG make-span", makespan),
+#         # html.P(queing_time),
+#         # html.P(completion_time),
+#         # html.P(makespan),
+#     ]
 
 
 def build_running_stats_board():
@@ -810,7 +821,6 @@ app.layout = html.Div(
 
 @app.callback(
     Output("scheduling-output", "children"),
-    Output("metric-rows", "children"),
     Input("run-scheduler", "n_clicks"),
     [State("scheduler-dropdown", "value")],
     State("session-dags", "data"),
@@ -843,10 +853,22 @@ def perform_scheduling(n_clicks, scheduler_type, dags, users, cluster):
     except Exception:
         SCHEDULER = None
 
-    return (
-        get_scheduling_output(SCHEDULER),
-        build_user_stat_rows(len(SCHEDULER.users) - 1, SCHEDULER.users),
-    )  # one less than users count
+    return get_scheduling_output(SCHEDULER)
+
+
+@app.callback(
+    Output("metrics-tbl", "data"),
+    Output("metrics-tbl", "columns"),
+    Input("scheduling-times-dropdown", "value"),
+    prevent_initial_call=True,
+)
+def render_metrics_table(time):
+    if SCHEDULER is None:
+        return None
+
+    df = get_metrics_table(SCHEDULER, time)
+
+    return df.to_dict("records"), [{"name": i, "id": i} for i in df.columns]
 
 
 @app.callback(
@@ -1281,4 +1303,4 @@ def displayMouseOverNodeData(stylesheet, data):
     return stylesheet
 
 
-app.run_server(debug=True)
+app.run_server(debug=True, port=8051)

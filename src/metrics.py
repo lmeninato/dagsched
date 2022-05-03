@@ -114,3 +114,9 @@ class SchedulingMetrics:
 
     def get_preemptions(self):
         return self.preemptions
+
+    def get_local_preemptions(self, user):
+        total = 0
+        for _, preemptions in self.preemptions[user].items():
+            total += preemptions
+        return preemptions
