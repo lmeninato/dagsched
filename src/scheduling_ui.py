@@ -86,14 +86,6 @@ def generate_piechart():
     )
 
 
-def render_utilization(cluster, utilization):
-    generate_piechart()
-    usg = (utilization["cpus"] / cluster["cpus"]) * 100
-    cpu_usage = f"Using {utilization['cpus']} out of { usg}% cpus"
-    ram_usage = f"Using {utilization['ram']} out of {cluster['ram']} ram"
-    return [html.P(cpu_usage), html.P(ram_usage)]
-
-
 def render_global_metrics(cluster, metrics_t):
 
     queing_time = f"Queing_time:  {metrics_t.get_queuing_time()} "

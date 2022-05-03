@@ -590,9 +590,9 @@ def generate_metric_row(id, style, col1, col2, col3, col4, col5):  # , col6, col
     )
 
 
-def generate_metric_row_helper(stopped_interval, index):
-    print(params)
-    item = params[index]
+def generate_metric_row_helper(stopped_interval, index, users):
+    print(users)
+    item = users[index]["user"]  # params[index]
 
     div_id = item + suffix_row
     button_id = item + suffix_button_id
@@ -627,15 +627,18 @@ def generate_metric_row_helper(stopped_interval, index):
     )
 
 
-def build_user_stat_rows(stopped_interval, usrcount):
+def build_user_stat_rows(usrcount):
     print("in buc")
+    stopped_interval = 0
     divlist = []
     """if SCHEDULER:
         print("users ::", len(SCHEDULER.users))"""
 
     for c in range(1, usrcount + 1):
         print(c)
-        divlist.append(generate_metric_row_helper(stopped_interval, c))
+        divlist.append(
+            generate_metric_row_helper(stopped_interval, c, users=SCHEDULER.getUsers())
+        )
     # print(divlist)
     return divlist
 
@@ -672,10 +675,7 @@ def build_top_panel(stopped_interval):
                         id="metric-div",
                         children=[
                             generate_metric_list_header(),
-                            html.Div(
-                                id="metric-rows",
-                                children=build_user_stat_rows(stopped_interval, 3),
-                            ),
+                            html.Div(id="metric-rows"),
                         ],
                     ),
                 ],
@@ -801,6 +801,7 @@ app.layout = html.Div(
 
 @app.callback(
     Output("scheduling-output", "children"),
+    Output("metric-rows", "children"),
     Input("run-scheduler", "n_clicks"),
     [State("scheduler-dropdown", "value")],
     State("session-dags", "data"),
@@ -833,7 +834,10 @@ def perform_scheduling(n_clicks, scheduler_type, dags, users, cluster):
     except Exception:
         SCHEDULER = None
 
-    return get_scheduling_output(SCHEDULER)
+    return (
+        get_scheduling_output(SCHEDULER),
+        build_user_stat_rows(1),
+    )  # one less than users count
 
 
 @app.callback(
