@@ -3,8 +3,6 @@ from scheduling import Scheduler
 
 from dash import html
 
-# from src import metrics
-
 
 def generate_section_banner(title):
     return html.Div(className="section-banner", children=title)
@@ -37,8 +35,6 @@ def get_scheduling_output(scheduler: Scheduler):
         ),
         html.Br(),
         build_output_messages(),
-        # html.Button(id="increase-time", n_clicks=0, children=">>"),
-        # html.Button(id="decrease-time", n_clicks=0, children="<<"),
     ]
 
 
@@ -102,22 +98,22 @@ def render_global_metrics(cluster, metrics_t):
 def render_user_metrics(cluster, metrics_t, users, dags):
 
     for user in users:
-        print(user["name"])
-        print(len(dags[user["user"]].tasks))
+        user["name"]
+        len(dags[user["user"]].tasks)
 
-    username = f"Username:  {user['name']} "
+        username = f"Username:  {user['name']} "
 
-    local_queing_time = (
-        f"Local Queing Time:  {metrics_t.get_local_queuing_time(user['user'])} "
-    )
-    local_completion_time = (
-        f" Local Job Completion Time: {metrics_t.get_local_jct(user['user'])} "
-    )
-    local_makespan = (
-        f"Local Make-span of DAG: {metrics_t.get_local_makespan(user['user'])} "
-    )
+        local_queing_time = (
+            f"Local Queing Time:  {metrics_t.get_local_queuing_time(user['user'])} "
+        )
+        local_completion_time = (
+            f" Local Job Completion Time: {metrics_t.get_local_jct(user['user'])} "
+        )
+        local_makespan = (
+            f"Local Make-span of DAG: {metrics_t.get_local_makespan(user['user'])} "
+        )
 
-    task_count = f"Total number of jobs: { len(dags[user['user']].tasks)} "
+        task_count = f"Total number of jobs: { len(dags[user['user']].tasks)} "
 
     return [
         html.H4(" User Metrics:"),

@@ -1,4 +1,3 @@
-from click import style
 from src.scheduling import (
     FCFS,
     PriorityScheduler,
@@ -11,10 +10,7 @@ from src.scheduling_ui import (
     render_global_metrics,
     render_user_metrics,
     render_scheduling_messages,
-    # render_utilization,
     generate_section_banner,
-    # render_global_jobcount,
-    # getMetricsDF,
 )
 
 
@@ -27,6 +23,7 @@ import dash_daq as daq
 from dash import html, MATCH, ALL
 from dash_extensions.enrich import DashProxy, MultiplexerTransform, Input, Output, State
 from dash.exceptions import PreventUpdate
+import dash_bootstrap_components as dbc
 
 
 import dash_cytoscape as cyto
@@ -34,10 +31,7 @@ import logging
 import glob
 
 
-import os
 import pathlib
-import pandas as pd
-import plotly.graph_objs as go
 
 
 APP_PATH = str(pathlib.Path(__file__).parent.resolve())
@@ -58,8 +52,23 @@ logging.basicConfig(
     level=logging.DEBUG,
 )
 
-# app = dash.Dash(__name__)
-app = DashProxy(transforms=[MultiplexerTransform()])
+external_stylesheets = [
+    dbc.themes.BOOTSTRAP,
+    {
+        "href": "https://use.fontawesome.com/releases/v5.8.1/css/all.css",
+        "rel": "stylesheet",
+        "integrity": "sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp"
+        "0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf",
+        "crossorigin": "anonymous",
+    },
+]
+
+app = DashProxy(
+    __name__,
+    external_stylesheets=external_stylesheets,
+    transforms=[MultiplexerTransform()],
+)
+
 app.config.suppress_callback_exceptions = True
 
 SCHEDULER = None
@@ -81,39 +90,43 @@ base_cyto_stylesheet = [
         },
     },
     {
+        "selector": ".parent[label]",
+        "style": {"color": "white"},
+    },
+    {
         "selector": '[status = "RUNNING"]',
         "style": {
             "background-color": " #00cc99",
             "border-color": "#000000",
-        },  # green #00FF00
+        },
     },
     {
         "selector": '[status = "READY"]',
         "style": {
             "background-color": "#ffcc00",
             "border-color": "#000000",
-        },  # yellow #FFFF00
+        },
     },
     {
         "selector": '[status = "BLOCKED"]',
         "style": {
             "background-color": "#ff5050",
             "border-color": "#000000",
-        },  # red #FF0000
+        },
     },
     {
         "selector": '[status = "FINISHED"]',
         "style": {
             "background-color": "#33cccc",
             "border-color": "#000000",
-        },  # white #FFFFFF changed to blue - white difficult to understand
+        },
     },
     {
         "selector": '[status = "PREEMPTED"]',
         "style": {
             "background-color": "#9999ff",
             "border-color": "#000000",
-        },  # orange   #FFA500 changed to purple
+        },
     },
     {
         "selector": "edge",
@@ -190,7 +203,7 @@ def build_banner():
 def build_tab1():
     return dcc.Tab(
         id="Specs-tab",
-        label="Scheduling Specifications",  # label="Input Scheduling Task",
+        label="Scheduling Specifications",
         value="tab1",
         className="custom-tab",
         selected_className="custom-tab--selected",
@@ -241,9 +254,7 @@ def build_sched_dp():
             build_run_btn(),
         ],
         style={
-            # "width": "20%",
             "padding": "10px 10px 10px 10px",
-            # "display": "inline-block",
         },
     )
 
@@ -273,7 +284,6 @@ def build_dag_area():
             )
         ],
         style={
-            # "float": "center",
             "padding": "0px",
             "width": "70%",
             "display": "inline-block",
@@ -285,7 +295,15 @@ def build_dag_area():
 def build_run_btn():
     return html.Div(
         id="return-btn",
-        children=[html.Button(id="run-scheduler", n_clicks=0, children="Run")],
+        children=[
+            dbc.Button(
+                "Run",
+                id="run-scheduler",
+                n_clicks=0,
+                color="danger",
+                className="fa fa-rocket me-1",
+            )
+        ],
         style={"float": "right", "padding": "10px"},
     )
 
@@ -314,7 +332,6 @@ def build_metrics_board():
     return html.Div(
         id="metrics-pdiv",
         children=[
-            # <hr class="rounded">
             html.Hr(className="rounded"),
             html.H3("Metrics Board"),
             html.Hr(className="rounded"),
@@ -530,7 +547,6 @@ def generate_metric_row(id, style, col1, col2, col3, col4, col5):  # , col6, col
 
 
 def generate_metric_row_helper(stopped_interval, index, users):
-    print(users)
     item = users[index]["user"]  # params[index]
 
     div_id = item + suffix_row
@@ -543,7 +559,6 @@ def generate_metric_row_helper(stopped_interval, index, users):
     # test_id = item + suffix_test
 
     # put metrics into df dump here
-    # print(test_id)
 
     return generate_metric_row(
         div_id,
@@ -567,21 +582,14 @@ def generate_metric_row_helper(stopped_interval, index, users):
 
 
 def build_user_stat_rows(usrcount, users):
-    print("in buc")
     stopped_interval = 0
     divlist = []
-    """if SCHEDULER:
-        print("users ::", len(SCHEDULER.users))"""
-    # metrics_t = SCHEDULER.get_history_metrics_at_t(time)  # returns a dictionary
 
     for c in range(0, usrcount + 1):
-        # print(c)
         divlist.append(
-            generate_metric_row_helper(
-                stopped_interval, c, users=SCHEDULER.getUsers()
-            )  # , metrics_t, SCHEDULER.dags
+            generate_metric_row_helper(stopped_interval, c, users=SCHEDULER.getUsers())
         )
-    # print(divlist)
+
     return divlist
 
 
@@ -684,8 +692,8 @@ def render_global_jobcount(dags, users):
 def render_utilization(cluster, utilization):
     cpuusgperc = (utilization["cpus"] / cluster["cpus"]) * 100
     ramusgperc = (utilization["ram"] / cluster["ram"]) * 100
-    cpu_usage = f"Using {utilization['cpus']} out of { cluster['cpus']} cpus"
-    ram_usage = f"Using {utilization['ram']} out of {cluster['ram']} ram"
+    # cpu_usage = f"Using {utilization['cpus']} out of { cluster['cpus']} cpus"
+    # ram_usage = f"Using {utilization['ram']} out of {cluster['ram']} ram"
     return [
         generate_ledbox("CPU utilization (%)", cpuusgperc),
         # html.P(cpu_usage),
@@ -788,7 +796,6 @@ def perform_scheduling(n_clicks, scheduler_type, dags, users, cluster):
     prevent_initial_call=True,
 )
 def render_state_from_scheduler_history_per_user(time):
-    logging.info(f"Selected time is {time}")
     if SCHEDULER is None:
         return None
     users = SCHEDULER.getUsers()
@@ -808,8 +815,6 @@ def render_state_from_scheduler_history_per_user(time):
     prevent_initial_call=True,
 )
 def render_state_from_scheduler_history(time, dags):
-    logging.info(f"Selected time is {time}")
-
     if SCHEDULER is None:
         return dags, None, None
 
@@ -853,7 +858,6 @@ def decrease_history_time(n_clicks, options, time):
 
 @app.callback(Output("input-ui", "children"), [Input("input-dropdown", "value")])
 def render_input_ui(value):
-    logging.info(f"selected input type: {value}")
     if isinstance(value, list):
         input_option = value[0]
     else:
@@ -899,8 +903,6 @@ def render_input_ui(value):
     Output("custom-user-tasks-ui", "children"), Input("input-number-users", "value")
 )
 def render_custom_user_tasks_ui(num_users):
-    logging.info("todo: render custom user tasks UI")
-
     ui_elements = [
         daq.NumericInput(
             id="input-cluster-cpus",

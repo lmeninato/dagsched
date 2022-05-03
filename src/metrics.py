@@ -112,5 +112,5 @@ class SchedulingMetrics:
 
         return local_func(queue_times)
 
-    def get_premeptions(self):
-        print(self.preemptions)
+    def get_preemptions(self):
+        return self.preemptions
