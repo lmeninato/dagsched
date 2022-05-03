@@ -621,7 +621,7 @@ def generate_metric_row_helper(stopped_interval, index, users):
             ),
         },  # user name
         {"id": count_id, "children": "0"},  # job count, add variables hre
-        {"id": ooc_percentage_id, "children": "0.00%"},  #  job completion time
+        {"id": ooc_percentage_id, "children": "0.00%"},  # job completion time
         {"id": sparkline_graph_id, "children": "0.00%"},  # job queue time
         {"id": ooc_graph_id, "children": "0"},  # makespan
     )
@@ -633,11 +633,14 @@ def build_user_stat_rows(usrcount, users):
     divlist = []
     """if SCHEDULER:
         print("users ::", len(SCHEDULER.users))"""
+    # metrics_t = SCHEDULER.get_history_metrics_at_t(time)  # returns a dictionary
 
     for c in range(0, usrcount + 1):
         # print(c)
         divlist.append(
-            generate_metric_row_helper(stopped_interval, c, users=SCHEDULER.getUsers())
+            generate_metric_row_helper(
+                stopped_interval, c, users=SCHEDULER.getUsers()
+            )  # , metrics_t, SCHEDULER.dags
         )
     # print(divlist)
     return divlist
