@@ -627,15 +627,15 @@ def generate_metric_row_helper(stopped_interval, index, users):
     )
 
 
-def build_user_stat_rows(usrcount):
+def build_user_stat_rows(usrcount, users):
     print("in buc")
     stopped_interval = 0
     divlist = []
     """if SCHEDULER:
         print("users ::", len(SCHEDULER.users))"""
 
-    for c in range(1, usrcount + 1):
-        print(c)
+    for c in range(0, usrcount + 1):
+        # print(c)
         divlist.append(
             generate_metric_row_helper(stopped_interval, c, users=SCHEDULER.getUsers())
         )
@@ -836,7 +836,7 @@ def perform_scheduling(n_clicks, scheduler_type, dags, users, cluster):
 
     return (
         get_scheduling_output(SCHEDULER),
-        build_user_stat_rows(len(SCHEDULER.users) - 1),
+        build_user_stat_rows(len(SCHEDULER.users) - 1, SCHEDULER.users),
     )  # one less than users count
 
 
