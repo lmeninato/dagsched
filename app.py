@@ -722,18 +722,6 @@ def render_global_metrics(cluster, metrics_t):
     # queing_time = f"Queing_time:  {metrics_t.get_queuing_time()}"
     completion_time = str(metrics_t.get_jct())
     makespan = str(metrics_t.get_makespan())
-    print(
-        "JCT check:",
-        completion_time,
-        "\t",
-        makespan,
-        type(completion_time),
-        type(makespan),
-        type(14.5),
-        type(metrics_t.get_makespan()),
-        type(metrics_t.get_jct()),
-    )
-
     if completion_time == "nan":
         print("came here nan")
         completion_time = -1.0
