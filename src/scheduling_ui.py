@@ -3,6 +3,8 @@ from scheduling import Scheduler
 
 from dash import html
 
+from src import metrics
+
 
 def generate_section_banner(title):
     return html.Div(className="section-banner", children=title)
@@ -62,6 +64,22 @@ def render_utilization(cluster, utilization):
     cpu_usage = f"Using {utilization['cpus']} out of {cluster['cpus']} cpus"
     ram_usage = f"Using {utilization['ram']} out of {cluster['ram']} ram"
     return [html.P(cpu_usage), html.P(ram_usage)]
+
+def render_global_metrics(cluster, metrics_t):
+
+    queing_time =  f"Queing_time:  {metrics_t.get_queuing_time()} "
+    completion_time = f"Job Completion Time: {metrics_t.get_jct()} "
+    makespan= f"Make-span of DAG: {metrics_t.get_makespan()} "
+    '''local_queing_time=  metrics_t.get_local_queuing_time()
+    local_completion_time = metrics_t.get_local_completion_time()
+    local_makespan = metrics_t.get_local_makespan()'''
+    #print("checking value of metrics:", metrics_t.get_queuing_time())
+    return [
+        html.H4("Metrics"),
+        html.P(queing_time), 
+    html.P(completion_time),
+    html.P(makespan)
+    ] 
 
 
 """def getMetricsDF(scheduler: Scheduler):

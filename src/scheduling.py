@@ -41,7 +41,6 @@ class SchedulerHistory:
     def get_metrics(self, t):
         if t not in self.times:
             raise KeyError(f"Time {t} not in scheduler history")
-
         return self.metrics[t]
 
     def get_all_metrics(self):

@@ -7,6 +7,7 @@ from src.scheduling import (
 )
 from src.scheduling_ui import (
     get_scheduling_output,
+    render_global_metrics,
     render_scheduling_messages,
     render_utilization,
     generate_section_banner,
@@ -762,6 +763,7 @@ def build_top_panel(stopped_interval):
                     generate_section_banner("Global Summary"),
                     # next div below
                     html.Div(id="scheduling-utilization"),
+                    html.Div(id="scheduling-metrics"),
                 ],
                 style={"width": "15%"},
             ),
@@ -872,6 +874,7 @@ def perform_scheduling(n_clicks, scheduler_type, dags, users, cluster):
     Output("session-dags", "data"),
     Output("scheduling-messages", "children"),
     Output("scheduling-utilization", "children"),
+    Output("scheduling-metrics", "children"),
     Input("scheduling-times-dropdown", "value"),
     State("session-dags", "data"),
     prevent_initial_call=True,
@@ -883,11 +886,13 @@ def render_state_from_scheduler_history(time, dags):
         return dags, None, None
 
     messages, dags, utilization = SCHEDULER.get_history(time)
+    metrics_t = SCHEDULER.get_history_metrics_at_t(time) #returns a dictionary
 
     return (
         dags,
         render_scheduling_messages(messages),
         render_utilization(SCHEDULER.cluster, utilization),
+        render_global_metrics(SCHEDULER.cluster, metrics_t),
     )
 
 
