@@ -836,7 +836,7 @@ def perform_scheduling(n_clicks, scheduler_type, dags, users, cluster):
 
     return (
         get_scheduling_output(SCHEDULER),
-        build_user_stat_rows(1),
+        build_user_stat_rows(len(SCHEDULER.users) - 1),
     )  # one less than users count
 
 
