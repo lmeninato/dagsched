@@ -70,6 +70,9 @@ class Scheduler:
         while not finished:
             finished = self.perform_scheduling_round()
 
+    def getUsers(self):
+        return self.users
+
     def perform_scheduling_round():
         """
         virtual function, must be overriden

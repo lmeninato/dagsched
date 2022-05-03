@@ -1,3 +1,4 @@
+from click import style
 from src.scheduling import (
     FCFS,
     PriorityScheduler,
@@ -8,9 +9,11 @@ from src.scheduling import (
 from src.scheduling_ui import (
     get_scheduling_output,
     render_global_metrics,
+    render_user_metrics,
     render_scheduling_messages,
-    render_utilization,
+    # render_utilization,
     generate_section_banner,
+    # render_global_jobcount,
     # getMetricsDF,
 )
 
@@ -544,114 +547,7 @@ def populate_ooc(data, ucl, lcl):
 state_dict = init_df()  # use this logic to get the metric measures
 
 
-def generate_metric_row_helper(stopped_interval, index):
-    # print(params)
-    item = params[index]
-
-    div_id = item + suffix_row
-    button_id = item + suffix_button_id
-    sparkline_graph_id = item + suffix_sparkline_graph
-    count_id = item + suffix_count
-    ooc_percentage_id = item + suffix_ooc_n
-    ooc_graph_id = item + suffix_ooc_g
-    indicator_id = item + suffix_indicator
-    test_id = item + suffix_test
-
-    # put metrics into df dump here
-    # print(test_id)
-
-    return generate_metric_row(
-        div_id,
-        None,
-        {
-            "id": item,
-            "className": "metric-row-button-text",
-            "children": html.Button(
-                id=button_id,
-                className="metric-row-button",
-                children=item,
-                title="Click to visualize live SPC chart",
-                n_clicks=0,
-            ),
-        },
-        {"id": count_id, "children": "0"},
-        {
-            "id": item + "_sparkline",
-            # add time interval wise data here for params
-            "children": dcc.Graph(
-                id=sparkline_graph_id,
-                style={"width": "100%", "height": "95%"},
-                config={
-                    "staticPlot": False,
-                    "editable": False,
-                    "displayModeBar": False,
-                },
-                figure=go.Figure(
-                    {
-                        "data": [
-                            {
-                                "x": state_dict["Batch"]["data"].tolist()[
-                                    :stopped_interval
-                                ],
-                                "y": state_dict[item]["data"][:stopped_interval],
-                                "mode": "lines+markers",
-                                "name": item,
-                                "line": {"color": "#f4d44d"},
-                            }
-                        ],
-                        "layout": {
-                            "uirevision": True,
-                            "margin": dict(l=0, r=0, t=4, b=4, pad=0),
-                            "xaxis": dict(
-                                showline=False,
-                                showgrid=False,
-                                zeroline=False,
-                                showticklabels=False,
-                            ),
-                            "yaxis": dict(
-                                showline=False,
-                                showgrid=False,
-                                zeroline=False,
-                                showticklabels=False,
-                            ),
-                            "paper_bgcolor": "rgba(0,0,0,0)",
-                            "plot_bgcolor": "rgba(0,0,0,0)",
-                        },
-                    }
-                ),
-            ),
-        },
-        {"id": ooc_percentage_id, "children": "0.00%"},
-        {
-            "id": ooc_graph_id + "_container",
-            "children": daq.GraduatedBar(
-                id=ooc_graph_id,
-                color={
-                    "ranges": {
-                        "#92e0d3": [0, 3],
-                        "#f4d44d ": [3, 7],
-                        "#f45060": [7, 15],
-                    }
-                },
-                showCurrentValue=False,
-                max=15,
-                value=0,
-            ),
-        },
-        {
-            "id": item + "_pf",
-            "children": daq.Indicator(
-                id=indicator_id, value=True, color="#91dfd2", size=12
-            ),
-        },
-        {
-            "id": item + "_test",
-            "children": daq.Indicator(id=test_id, value=True, color="#10dfd2", size=12),
-        },
-    )
-
-
-def generate_metric_row(id, style, col1, col2, col3, col4, col5, col6, col7):
+def generate_metric_row(id, style, col1, col2, col3, col4, col5):  # , col6, col7
     if style is None:
         style = {"height": "8rem", "width": "100%"}
 
@@ -690,27 +586,55 @@ def generate_metric_row(id, style, col1, col2, col3, col4, col5, col6, col7):
                 className="three columns",
                 children=col5["children"],
             ),
-            html.Div(
-                id=col6["id"],
-                style={"display": "flex", "justifyContent": "center"},
-                className="one column",
-                children=col6["children"],
-            ),
-            html.Div(
-                id=col7["id"],
-                style={"display": "flex", "justifyContent": "center"},
-                className="one column",
-                children=col7["children"],
-            ),
         ],
+    )
+
+
+def generate_metric_row_helper(stopped_interval, index):
+    print(params)
+    item = params[index]
+
+    div_id = item + suffix_row
+    button_id = item + suffix_button_id
+    sparkline_graph_id = item + suffix_sparkline_graph
+    count_id = item + suffix_count
+    ooc_percentage_id = item + suffix_ooc_n
+    ooc_graph_id = item + suffix_ooc_g
+    # indicator_id = item + suffix_indicator
+    # test_id = item + suffix_test
+
+    # put metrics into df dump here
+    # print(test_id)
+
+    return generate_metric_row(
+        div_id,
+        None,
+        {
+            "id": item,
+            "className": "metric-row-button-text",
+            "children": html.Button(
+                id=button_id,
+                className="metric-row-button",
+                children=item,
+                title="Click to visualize live SPC chart",
+                n_clicks=0,
+            ),
+        },  # user name
+        {"id": count_id, "children": "0"},  # job count, add variables hre
+        {"id": ooc_percentage_id, "children": "0.00%"},  #  job completion time
+        {"id": sparkline_graph_id, "children": "0.00%"},  # job queue time
+        {"id": ooc_graph_id, "children": "0"},  # makespan
     )
 
 
 def build_user_stat_rows(stopped_interval, usrcount):
     print("in buc")
-    # print("sched metrics", SCHEDULER.get_history_metrics(10))
     divlist = []
+    """if SCHEDULER:
+        print("users ::", len(SCHEDULER.users))"""
+
     for c in range(1, usrcount + 1):
+        print(c)
         divlist.append(generate_metric_row_helper(stopped_interval, c))
     # print(divlist)
     return divlist
@@ -722,12 +646,12 @@ def generate_metric_list_header():
         "metric_header",
         {"height": "3rem", "margin": "1rem 0", "textAlign": "center"},
         {"id": "m_header_1", "children": html.Div("User")},
-        {"id": "m_header_2", "children": html.Div("Jobs")},
-        {"id": "m_header_3", "children": html.Div("Arrivals")},
-        {"id": "m_header_4", "children": html.Div("Preemptions")},
-        {"id": "m_header_5", "children": html.Div("Job Completion Time")},
-        {"id": "m_header_6", "children": html.Div("Job Queue Time")},
-        {"id": "m_header_7", "children": html.Div("TestCol")},
+        {"id": "m_header_2", "children": html.Div("Jobs Count")},
+        # {"id": "m_header_3", "children": html.Div("Arrivals")},
+        # {"id": "m_header_4", "children": html.Div("Preemptions")},
+        {"id": "m_header_3", "children": html.Div("Job Completion Time")},
+        {"id": "m_header_4", "children": html.Div("Job Queue Time")},
+        {"id": "m_header_5", "children": html.Div("Make-Span")},
     )
 
 
@@ -741,19 +665,21 @@ def build_top_panel(stopped_interval):
                 id="metric-summary-session",
                 className="eight columns",
                 children=[
-                    generate_section_banner("Process Control Metrics Summary"),
+                    generate_section_banner(
+                        "Schedule Policy Execution Metrics Summary"
+                    ),
                     html.Div(
                         id="metric-div",
                         children=[
                             generate_metric_list_header(),
                             html.Div(
                                 id="metric-rows",
-                                children=build_user_stat_rows(stopped_interval, 7),
+                                children=build_user_stat_rows(stopped_interval, 3),
                             ),
                         ],
                     ),
                 ],
-                style={"width": "77%"},
+                style={"width": "60%"},
             ),
             # Piechart
             html.Div(
@@ -762,28 +688,68 @@ def build_top_panel(stopped_interval):
                 children=[
                     generate_section_banner("Global Summary"),
                     # next div below
-                    html.Div(id="scheduling-utilization"),
-                    html.Div(id="scheduling-metrics"),
+                    html.Div(
+                        id="gbleft",
+                        children=[
+                            html.Div(id="scheduling-jobcount"),
+                            html.Div(id="scheduling-utilization"),
+                        ],
+                        style={"float": "left", "width": "50%"},
+                    ),
+                    html.Div(
+                        id="gbrigth",
+                        children=[
+                            html.Div(id="scheduling-metrics"),
+                        ],
+                        style={"float": "right", "width": "50%"},
+                    ),
                 ],
-                style={"width": "15%"},
+                style={"width": "35%"},
             ),
         ],
     )
 
 
-def getMetricsDFA():
-    from pdb import set_trace
+def generate_ledbox(title, value):
+    return html.Div(
+        id="quick-stats",
+        className="row",
+        children=[
+            html.Div(
+                id="test",
+                children=[
+                    html.H2(title, style={"font-size": "14px"}),  #
+                    daq.LEDDisplay(
+                        id="operator-led",
+                        value=value,
+                        color="#92e0d3",
+                        backgroundColor="#1e2130",
+                        size=10,
+                    ),
+                ],
+            ),
+        ],
+    )  # div ends
 
-    print("in get metrics")
-    # print()
-    for m in SCHEDULER.get_history_metrics().values():
-        set_trace()
-        print("Q time:", m.get_queuing_time())
-        # print(" Local Q time:", m.get_local_queuing_time())
-        # print("Local jct", m.get_local_jct())
-        print("Global JCT ", m.get_jct())
-        # print("Makespans", m.get_local_makespan())
-        # print("premetions:", m.get_premeptions())
+
+def render_global_jobcount(dags, users):
+    jobcount = 0
+    for user in users:
+        jobcount += len(dags[user["user"]].tasks)
+    return generate_ledbox("Global Job Count", jobcount)
+
+
+def render_utilization(cluster, utilization):
+    cpuusgperc = (utilization["cpus"] / cluster["cpus"]) * 100
+    ramusgperc = (utilization["ram"] / cluster["ram"]) * 100
+    cpu_usage = f"Using {utilization['cpus']} out of { cluster['cpus']} cpus"
+    ram_usage = f"Using {utilization['ram']} out of {cluster['ram']} ram"
+    return [
+        generate_ledbox("CPU utilization (%)", cpuusgperc),
+        # html.P(cpu_usage),
+        generate_ledbox("RAM utilization (%)", ramusgperc),
+        # html.P(ram_usage),
+    ]
 
 
 def build_running_stats_board():
@@ -802,6 +768,7 @@ def build_running_stats_board():
                 id="rsb-logo",  # save local and global stats with a single button
                 children=[
                     build_top_panel(1),
+                    html.Div(id="scheduling-user-metrics"),
                     html.Div(
                         children=[
                             html.A(
@@ -863,7 +830,6 @@ def perform_scheduling(n_clicks, scheduler_type, dags, users, cluster):
 
         if SCHEDULER:
             SCHEDULER.run()
-            #getMetricsDFA()
     except Exception:
         SCHEDULER = None
 
@@ -871,10 +837,26 @@ def perform_scheduling(n_clicks, scheduler_type, dags, users, cluster):
 
 
 @app.callback(
+    Output("scheduling-user-metrics", "children"),
+    Input("scheduling-times-dropdown", "value"),
+    prevent_initial_call=True,
+)
+def render_state_from_scheduler_history_per_user(time):
+    logging.info(f"Selected time is {time}")
+    if SCHEDULER is None:
+        return None
+    users = SCHEDULER.getUsers()
+    metrics_t = SCHEDULER.get_history_metrics_at_t(time)  # returns a dictionary
+
+    return render_user_metrics(SCHEDULER.cluster, metrics_t, users, SCHEDULER.dags)
+
+
+@app.callback(
     Output("session-dags", "data"),
     Output("scheduling-messages", "children"),
     Output("scheduling-utilization", "children"),
     Output("scheduling-metrics", "children"),
+    Output("scheduling-jobcount", "children"),
     Input("scheduling-times-dropdown", "value"),
     State("session-dags", "data"),
     prevent_initial_call=True,
@@ -886,13 +868,14 @@ def render_state_from_scheduler_history(time, dags):
         return dags, None, None
 
     messages, dags, utilization = SCHEDULER.get_history(time)
-    metrics_t = SCHEDULER.get_history_metrics_at_t(time) #returns a dictionary
+    metrics_t = SCHEDULER.get_history_metrics_at_t(time)  # returns a dictionary
 
     return (
         dags,
         render_scheduling_messages(messages),
         render_utilization(SCHEDULER.cluster, utilization),
         render_global_metrics(SCHEDULER.cluster, metrics_t),
+        render_global_jobcount(SCHEDULER.dags, SCHEDULER.getUsers()),
     )
 
 

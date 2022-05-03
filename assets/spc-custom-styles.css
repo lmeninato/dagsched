@@ -87,16 +87,24 @@ body {
 
 /* The Modal (background) */
 .modal {
-  display: none; /*Hidden by default */
-  position: fixed; /* Stay in place */
-  z-index: 1005; /* Sit on top */
+  display: none;
+  /*Hidden by default */
+  position: fixed;
+  /* Stay in place */
+  z-index: 1005;
+  /* Sit on top */
   left: 0;
   top: 0;
-  width: 100vw; /* Full width */
-  height: 100vh; /* Full height */
-  overflow: auto; /* Enable scroll if needed */
-  background-color: rgb(0, 0, 0); /* Fallback color */
-  background-color: rgba(0, 0, 0, 0.4); /* Black w/ opacity */
+  width: 100vw;
+  /* Full width */
+  height: 100vh;
+  /* Full height */
+  overflow: auto;
+  /* Enable scroll if needed */
+  background-color: rgb(0, 0, 0);
+  /* Fallback color */
+  background-color: rgba(0, 0, 0, 0.4);
+  /* Black w/ opacity */
 }
 
 /* Modal Content/Box */
@@ -142,7 +150,8 @@ body {
   cursor: pointer;
 }
 
-#Specs-tab.custom-tab, #Control-chart-tab.custom-tab {
+#Specs-tab.custom-tab,
+#Control-chart-tab.custom-tab {
   background-color: #161a28;
   letter-spacing: 1px;
   color: inherit;
@@ -156,7 +165,8 @@ body {
   height: 18px;
 }
 
-#Specs-tab.custom-tab--selected, #Control-chart-tab.custom-tab--selected {
+#Specs-tab.custom-tab--selected,
+#Control-chart-tab.custom-tab--selected {
   border-bottom: #91dfd2 solid 4px !important;
 }
 
@@ -187,7 +197,7 @@ body {
   /*width: 100%;*/
 }
 
-#metric_header > div {
+#metric_header>div {
   font-weight: bold;
   font-size: 1.35rem;
   line-height: 3rem;
@@ -202,7 +212,8 @@ body {
   display: flex;
   flex-direction: row;
   justify-content: space-evenly;
-  align-items: center; /* vertical center row items*/
+  align-items: center;
+  /* vertical center row items*/
 }
 
 .metric-row:hover {
@@ -210,14 +221,14 @@ body {
 }
 
 /*Dash Daq Graduatebar */
-#Diameter_OOC_graph > div > div,
-#Etch1_OOC_graph > div > div,
-#Film-Thickness_OOC_graph > div > div,
-#Metric4_OOC_graph > div > div,
-#Etch2_OOC_graph > div > div,
-#Line-Width_OOC_graph > div > div,
-#Overlay_OOC_graph > div > div,
-#Volume_OOC_graph > div > div {
+#Diameter_OOC_graph>div>div,
+#Etch1_OOC_graph>div>div,
+#Film-Thickness_OOC_graph>div>div,
+#Metric4_OOC_graph>div>div,
+#Etch2_OOC_graph>div>div,
+#Line-Width_OOC_graph>div>div,
+#Overlay_OOC_graph>div>div,
+#Volume_OOC_graph>div>div {
   width: 100%;
   background-color: #1e2130 !important;
 }
@@ -252,7 +263,9 @@ body {
   height: 100%;
 }
 
-#card-1, #card-2, #utility-card {
+#card-1,
+#card-2,
+#utility-card {
   display: flex;
   flex-direction: column;
   justify-content: space-evenly;
@@ -271,7 +284,7 @@ body {
   margin-top: 2rem;
 }
 
-#stop-button > div > button:hover {
+#stop-button>div>button:hover {
   color: #91dfd2 !important;
 }
 
@@ -311,21 +324,26 @@ body {
   border-bottom: 1px solid #4b5460;
 }
 
-#value-setter-panel-header > div {
+#value-setter-panel-header>div {
   text-align: right;
 }
 
-#value-setter-view-btn, #value-setter-set-btn {
+#value-setter-view-btn,
+#value-setter-set-btn {
   border: 1px solid #4B5460;
   color: darkgray;
 }
 
-#value-setter-set-btn:hover, #value-setter-view-btn:hover {
+#value-setter-set-btn:hover,
+#value-setter-view-btn:hover {
   color: #91dfd2;
   border-color: white;
 }
 
-#value-setter-panel-usl, #value-setter-panel-lsl, #value-setter-panel-ucl, #value-setter-panel-lcl {
+#value-setter-panel-usl,
+#value-setter-panel-lsl,
+#value-setter-panel-ucl,
+#value-setter-panel-lcl {
   padding: 1rem 0;
 }
 
@@ -342,7 +360,8 @@ body {
   height: 100%;
 }
 
-.react-numeric-input, .react-numeric-input input {
+.react-numeric-input,
+.react-numeric-input input {
   width: 100% !important;
 }
 
@@ -365,12 +384,17 @@ body {
 ----------------------------------------------*/
 
 /*Dropdown items*/
-.Select-control, .Select-multi-value-wrapper, .Select-menu-outer div {
+.Select-control,
+.Select-multi-value-wrapper,
+.Select-menu-outer div {
   background-color: #242633;
 }
 
 /*Dropdown items*/
-.Select-control, .Select, .Select-value-label, .Select-clear-zone {
+.Select-control,
+.Select,
+.Select-value-label,
+.Select-clear-zone {
   color: white;
 }
 
@@ -388,18 +412,21 @@ body {
 }
 
 /*Dropdown arrow + delete button*/
-.Select-control, .Select-control > span {
+.Select-control,
+.Select-control>span {
   color: white;
   background: #242633 !important;
 }
 
 /*Placeholder*/
-.Select.has-value.Select--single > .Select-control .Select-value .Select-value-label, .Select.has-value.is-pseudo-focused.Select--single > .Select-control .Select-value .Select-value-label {
+.Select.has-value.Select--single>.Select-control .Select-value .Select-value-label,
+.Select.has-value.is-pseudo-focused.Select--single>.Select-control .Select-value .Select-value-label {
   color: white !important;
 }
 
 /*Placeholder*/
-.Select--single > .Select-control .Select-value, .Select-placeholder {
+.Select--single>.Select-control .Select-value,
+.Select-placeholder {
   /*border: 1px solid darkgray;*/
   border-radius: 4px;
   background-color: #242633;
@@ -407,7 +434,7 @@ body {
 }
 
 
-.Select.is-focused:not(.is-open) > .Select-control {
+.Select.is-focused:not(.is-open)>.Select-control {
   border-color: #91dfd2 !important;
 }
 
@@ -478,30 +505,32 @@ body {
   border-right: #1E2130 solid 0.8rem;
   flex: 1 1;
   padding: 2rem;
-  max-width: 25%;
+  max-width: 100%;
 }
 
 #operator-led {
   width: 200px;
 }
 
-#operator-led > div {
+#operator-led>div {
   width: 80%;
   margin: auto;
 }
 
-#operator-led > div > div {
+#operator-led>div>div {
   width: 100%;
   display: flex;
   flex-direction: row;
   justify-content: center;
 }
 
-#operator-led > div > div svg:nth-child(1) {
+#operator-led>div>div svg:nth-child(1) {
   margin-left: -1rem;
 }
 
-#progress-gauge > div, #progress-gauge > div > div, #progress-gauge > div > div > div {
+#progress-gauge>div,
+#progress-gauge>div>div,
+#progress-gauge>div>div>div {
   width: 100%;
   text-align: center;
 }
@@ -511,7 +540,7 @@ body {
   height: auto;
 }
 
-#progress-gauge > div > div > div > div {
+#progress-gauge>div>div>div>div {
   color: white !important;
 }
 
@@ -527,7 +556,7 @@ body {
 
 /* Tab 2 Specs
 –––––––––––––––––––––––––––––––––––––––––––––––––– */
-#stop-button > div > button {
+#stop-button>div>button {
   color: white !important;
   background-color: #1d202d !important;
   border: 1px solid #4B5460 !important;
@@ -536,20 +565,23 @@ body {
   line-height: 40px;
 }
 
-#stop-button > div > button:hover {
+#stop-button>div>button:hover {
   color: #91dfd2 !important;
   border-color: white !important;
   background-color: #1d202d !important;
 }
 
-#card-1 P, #card-2 P {
+#card-1 P,
+#card-2 P {
   margin: 2rem;
   color: inherit;
   font-weight: bold;
   align-self: flex-start;
 }
 
-#card-2 .scale, #card-2 .needle, #card-2 .needle-knob {
+#card-2 .scale,
+#card-2 .needle,
+#card-2 .needle-knob {
   display: none !important;
 }
 
@@ -631,7 +663,7 @@ body {
     flex-direction: column;
   }
 
-  #settings-menu > div {
+  #settings-menu>div {
     width: 100%;
     flex: none;
     display: flex;
@@ -659,7 +691,8 @@ body {
     margin: 2rem;
   }
 
-  #status-container, #top-section-container {
+  #status-container,
+  #top-section-container {
     flex-direction: column;
     height: auto;
   }
@@ -674,12 +707,13 @@ body {
     width: 100%;
   }
 
-  #top-section-container > div {
+  #top-section-container>div {
     width: 100%;
     height: auto;
   }
 
-  #card-1 P, #card-2 P {
+  #card-1 P,
+  #card-2 P {
     align-self: auto;
   }
 
@@ -695,6 +729,7 @@ body {
 }
 
 @media only screen and (max-width: 600px) {
+
   /* Display measurement row contents block-level on mobile*/
   /** Display every row content in block*!*/
   #metric_header {
@@ -720,7 +755,8 @@ body {
     border-bottom: 1px solid #1E2130;
   }
 
-  #metric-rows .column, #metric-rows .columns {
+  #metric-rows .column,
+  #metric-rows .columns {
     width: 100% !important;
     float: none;
     margin: 0.25rem 0 !important;
@@ -728,7 +764,8 @@ body {
     position: relative;
   }
 
-  #metric-rows .column:before, #metric-rows .columns:before {
+  #metric-rows .column:before,
+  #metric-rows .columns:before {
     /* Now like a table header */
     position: absolute;
     /* Top/left values mimic padding */
@@ -739,47 +776,47 @@ body {
   }
 
   /** Attach header vertically to table */
-  .metric-row > div {
+  .metric-row>div {
     height: 30px;
     line-height: 30px;
     text-align: center;
   }
 
   /*Hide Sparkline*/
-  .metric-row > div:nth-of-type(3) {
+  .metric-row>div:nth-of-type(3) {
     display: none;
   }
 
-  .metric-row > div:nth-of-type(6) > div {
+  .metric-row>div:nth-of-type(6)>div {
     margin-top: 6.5px !important;
   }
 
   /*Add table header column*/
-  .metric-row > div:nth-of-type(1):before {
+  .metric-row>div:nth-of-type(1):before {
     content: "Parameter";
   }
 
-  .metric-row > div:nth-of-type(2):before {
+  .metric-row>div:nth-of-type(2):before {
     content: "Total Measurement";
   }
 
-  .metric-row > div:nth-of-type(3):before {
+  .metric-row>div:nth-of-type(3):before {
     content: "   ";
   }
 
-  .metric-row > div:nth-of-type(4):before {
+  .metric-row>div:nth-of-type(4):before {
     content: "OOC %";
   }
 
-  .metric-row > div:nth-of-type(5) {
+  .metric-row>div:nth-of-type(5) {
     margin-top: 0 !important;
   }
 
-  .metric-row > div:nth-of-type(5):before {
+  .metric-row>div:nth-of-type(5):before {
     content: "Out of Control";
   }
 
-  .metric-row > div:nth-of-type(6):before {
+  .metric-row>div:nth-of-type(6):before {
     content: "Pass / Fail";
   }
 

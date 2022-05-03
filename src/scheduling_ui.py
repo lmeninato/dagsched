@@ -3,7 +3,7 @@ from scheduling import Scheduler
 
 from dash import html
 
-from src import metrics
+# from src import metrics
 
 
 def generate_section_banner(title):
@@ -60,28 +60,78 @@ def render_scheduling_messages(messages):
     return [html.P(message) for message in messages]
 
 
+def generate_piechart():
+    return dcc.Graph(
+        id="piechart",
+        figure={
+            "data": [
+                {
+                    "labels": [],
+                    "values": [],
+                    "type": "pie",
+                    "marker": {"line": {"color": "white", "width": 1}},
+                    "hoverinfo": "label",
+                    "textinfo": "label",
+                }
+            ],
+            "layout": {
+                "margin": dict(l=20, r=20, t=20, b=20),
+                "showlegend": True,
+                "paper_bgcolor": "rgba(0,0,0,0)",
+                "plot_bgcolor": "rgba(0,0,0,0)",
+                "font": {"color": "white"},
+                "autosize": True,
+            },
+        },
+    )
+
+
 def render_utilization(cluster, utilization):
-    cpu_usage = f"Using {utilization['cpus']} out of {cluster['cpus']} cpus"
+    generate_piechart()
+    usg = (utilization["cpus"] / cluster["cpus"]) * 100
+    cpu_usage = f"Using {utilization['cpus']} out of { usg}% cpus"
     ram_usage = f"Using {utilization['ram']} out of {cluster['ram']} ram"
     return [html.P(cpu_usage), html.P(ram_usage)]
 
+
 def render_global_metrics(cluster, metrics_t):
 
-    queing_time =  f"Queing_time:  {metrics_t.get_queuing_time()} "
+    queing_time = f"Queing_time:  {metrics_t.get_queuing_time()} "
     completion_time = f"Job Completion Time: {metrics_t.get_jct()} "
-    makespan= f"Make-span of DAG: {metrics_t.get_makespan()} "
-    '''local_queing_time=  metrics_t.get_local_queuing_time()
-    local_completion_time = metrics_t.get_local_completion_time()
-    local_makespan = metrics_t.get_local_makespan()'''
-    #print("checking value of metrics:", metrics_t.get_queuing_time())
+    makespan = f"Make-span of DAG: {metrics_t.get_makespan()} "
     return [
-        html.H4("Metrics"),
-        html.P(queing_time), 
-    html.P(completion_time),
-    html.P(makespan)
-    ] 
+        # html.H4("Metrics"),
+        html.P(queing_time),
+        html.P(completion_time),
+        html.P(makespan),
+    ]
 
 
-"""def getMetricsDF(scheduler: Scheduler):
-    print("in get metrics")
-    print(Scheduler.get_history_metrics())"""
+def render_user_metrics(cluster, metrics_t, users, dags):
+
+    for user in users:
+        print(user["name"])
+        print(len(dags[user["user"]].tasks))
+
+    username = f"Username:  {user['name']} "
+
+    local_queing_time = (
+        f"Local Queing Time:  {metrics_t.get_local_queuing_time(user['user'])} "
+    )
+    local_completion_time = (
+        f" Local Job Completion Time: {metrics_t.get_local_jct(user['user'])} "
+    )
+    local_makespan = (
+        f"Local Make-span of DAG: {metrics_t.get_local_makespan(user['user'])} "
+    )
+
+    task_count = f"Total number of jobs: { len(dags[user['user']].tasks)} "
+
+    return [
+        html.H4(" User Metrics:"),
+        html.P(username),
+        html.P(local_queing_time),
+        html.P(local_completion_time),
+        html.P(local_makespan),
+        html.P(task_count),
+    ]
