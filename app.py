@@ -719,7 +719,7 @@ def render_utilization(cluster, utilization):
 
 def render_global_metrics(cluster, metrics_t):
 
-    # queing_time = f"Queing_time:  {metrics_t.get_queuing_time()} "
+    # queing_time = f"Queing_time:  {metrics_t.get_queuing_time()}"
     completion_time = str(metrics_t.get_jct())
     makespan = str(metrics_t.get_makespan())
     print(
@@ -740,7 +740,7 @@ def render_global_metrics(cluster, metrics_t):
 
     elif completion_time == "inf":
         print("came here inf")
-        completion_time = -2.0
+        completion_time = 9999.0
     else:
         completion_time = metrics_t.get_jct()
 
@@ -750,16 +750,14 @@ def render_global_metrics(cluster, metrics_t):
 
     elif makespan == "inf":
         print("came here inf")
-        makespan = -2.0
+        makespan = 9999.0
     else:
         makespan = metrics_t.get_makespan()
 
     return [
-        # html.H4("Metrics"),
+        # html.H4(" GLobal Metrics"),
         generate_ledbox2("Queing Time", metrics_t.get_queuing_time()),
-        # generate_ledbox("Job Completion Time", completion_time),
         generate_ledbox2("Job Completion Time", completion_time),
-        # generate_ledbox("DAG make-span", makespan),
         generate_ledbox2("DAG make-span", makespan),
         # html.P(queing_time),
         # html.P(completion_time),
