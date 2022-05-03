@@ -682,6 +682,29 @@ def generate_ledbox(title, value):
     )  # div ends
 
 
+# spacing and float value change fix applied in css
+def generate_ledbox2(title, value):
+    return html.Div(
+        id="quick-stats",
+        className="row",
+        children=[
+            html.Div(
+                id="test1",
+                children=[
+                    html.H2(title, style={"font-size": "14px"}),  #
+                    daq.LEDDisplay(
+                        id="operator-led2",
+                        value=value,
+                        color="#92e0d3",
+                        backgroundColor="#1e2130",
+                        size=10,
+                    ),
+                ],
+            ),
+        ],
+    )  # div ends
+
+
 def render_global_jobcount(dags, users):
     jobcount = 0
     for user in users:
@@ -699,6 +722,42 @@ def render_utilization(cluster, utilization):
         # html.P(cpu_usage),
         generate_ledbox("RAM utilization (%)", ramusgperc),
         # html.P(ram_usage),
+    ]
+
+
+def render_global_metrics(cluster, metrics_t):
+
+    # queing_time = f"Queing_time:  {metrics_t.get_queuing_time()}"
+    completion_time = str(metrics_t.get_jct())
+    makespan = str(metrics_t.get_makespan())
+    if completion_time == "nan":
+        print("came here nan")
+        completion_time = -1.0
+
+    elif completion_time == "inf":
+        print("came here inf")
+        completion_time = 9999.0
+    else:
+        completion_time = metrics_t.get_jct()
+
+    if makespan == "nan":
+        print("came here nan 2")
+        makespan = -1.0
+
+    elif makespan == "inf":
+        print("came here inf")
+        makespan = 9999.0
+    else:
+        makespan = metrics_t.get_makespan()
+
+    return [
+        # html.H4(" GLobal Metrics"),
+        generate_ledbox2("Queing Time", metrics_t.get_queuing_time()),
+        generate_ledbox2("Job Completion Time", completion_time),
+        generate_ledbox2("DAG make-span", makespan),
+        # html.P(queing_time),
+        # html.P(completion_time),
+        # html.P(makespan),
     ]
 
 
