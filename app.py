@@ -41,13 +41,7 @@ import plotly.graph_objs as go
 
 
 APP_PATH = str(pathlib.Path(__file__).parent.resolve())
-df = pd.read_csv(os.path.join(APP_PATH, os.path.join("data", "policies.csv")))
-userdf = pd.read_csv(os.path.join(APP_PATH, os.path.join("data", "users.csv")))
 
-params = list(df)
-max_length = len(df)
-
-users = list(userdf)
 suffix_row = "_row"
 suffix_button_id = "_button"
 suffix_sparkline_graph = "_sparkline_graph"
@@ -489,62 +483,7 @@ def build_final_stats_boards():
     )
 
 
-def parseMetricstoCSV():
-    SCHEDULER.get_history_metrics(10)
-    # for every user save metrics
-    # per user save time frame wise data as well.
-
-
 """Statistic Metrics"""
-
-
-def init_df():
-    # change this to create metrics as required
-    ret = {}
-    for col in list(df[1:]):
-        data = df[col]
-        stats = data.describe()
-
-        std = stats["std"].tolist()
-        ucl = (stats["mean"] + 3 * stats["std"]).tolist()
-        lcl = (stats["mean"] - 3 * stats["std"]).tolist()
-        usl = (stats["mean"] + stats["std"]).tolist()
-        lsl = (stats["mean"] - stats["std"]).tolist()
-
-        ret.update(
-            {
-                col: {
-                    "count": stats["count"].tolist(),
-                    "data": data,
-                    "mean": stats["mean"].tolist(),
-                    "std": std,
-                    "ucl": round(ucl, 3),
-                    "lcl": round(lcl, 3),
-                    "usl": round(usl, 3),
-                    "lsl": round(lsl, 3),
-                    "min": stats["min"].tolist(),
-                    "max": stats["max"].tolist(),
-                    # "ooc": populate_ooc(data, ucl, lcl),
-                }
-            }
-        )
-
-    return ret
-
-
-def populate_ooc(data, ucl, lcl):
-    ooc_count = 0
-    ret = []
-    for i in range(len(data)):
-        if data[i] >= ucl or data[i] <= lcl:
-            ooc_count += 1
-            ret.append(ooc_count / (i + 1))
-        else:
-            ret.append(ooc_count / (i + 1))
-    return ret
-
-
-state_dict = init_df()  # use this logic to get the metric measures
 
 
 def generate_metric_row(id, style, col1, col2, col3, col4, col5):  # , col6, col7
