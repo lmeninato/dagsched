@@ -41,8 +41,10 @@ class SchedulerHistory:
     def get_metrics(self, t):
         if t not in self.times:
             raise KeyError(f"Time {t} not in scheduler history")
-
         return self.metrics[t]
+
+    def get_all_metrics(self):
+        return self.metrics
 
 
 class Scheduler:
@@ -68,6 +70,9 @@ class Scheduler:
         while not finished:
             finished = self.perform_scheduling_round()
 
+    def getUsers(self):
+        return self.users
+
     def perform_scheduling_round():
         """
         virtual function, must be overriden
@@ -76,6 +81,12 @@ class Scheduler:
 
     def get_history(self, t):
         return self.history.get_events_at_time_t(t)
+
+    def get_history_metrics(self):
+        return self.history.get_all_metrics()
+
+    def get_history_metrics_at_t(self, t):
+        return self.history.get_metrics(t)
 
     def store_history(self, initial=False):
         if initial:

@@ -72,8 +72,12 @@ class DAG:
         self.name = dag["name"]
         self.arrival_time = dag["arrival_time"]
         self.tasks = {}
+        # add compound parent nodes
         self.nodes.append(
-            {"data": {"id": self.name, "label": self.name}, "classes": "parent"}
+            {
+                "data": {"id": self.name, "label": self.name},
+                "classes": "parent",
+            }
         )
 
         if deserialize:
