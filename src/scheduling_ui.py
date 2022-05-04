@@ -93,33 +93,3 @@ def render_global_metrics(cluster, metrics_t):
         html.P(completion_time),
         html.P(makespan),
     ]
-
-
-def render_user_metrics(cluster, metrics_t, users, dags):
-
-    for user in users:
-        user["name"]
-        len(dags[user["user"]].tasks)
-
-        username = f"Username:  {user['name']} "
-
-        local_queing_time = (
-            f"Local Queing Time:  {metrics_t.get_local_queuing_time(user['user'])} "
-        )
-        local_completion_time = (
-            f" Local Job Completion Time: {metrics_t.get_local_jct(user['user'])} "
-        )
-        local_makespan = (
-            f"Local Make-span of DAG: {metrics_t.get_local_makespan(user['user'])} "
-        )
-
-        task_count = f"Total number of jobs: { len(dags[user['user']].tasks)} "
-
-    return [
-        html.H4(" User Metrics:"),
-        html.P(username),
-        html.P(local_queing_time),
-        html.P(local_completion_time),
-        html.P(local_makespan),
-        html.P(task_count),
-    ]
