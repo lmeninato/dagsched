@@ -8,7 +8,6 @@ from src.scheduling import (
 from src.scheduling_ui import (
     get_scheduling_output,
     render_global_metrics,
-    render_user_metrics,
     render_scheduling_messages,
     generate_section_banner,
 )
@@ -30,11 +29,6 @@ import logging
 import glob
 
 
-import pathlib
-
-
-APP_PATH = str(pathlib.Path(__file__).parent.resolve())
-
 suffix_row = "_row"
 suffix_button_id = "_button"
 suffix_sparkline_graph = "_sparkline_graph"
@@ -53,17 +47,11 @@ logging.basicConfig(
 
 external_stylesheets = [
     dbc.themes.BOOTSTRAP,
-    {
-        "href": "https://use.fontawesome.com/releases/v5.8.1/css/all.css",
-        "rel": "stylesheet",
-        "integrity": "sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp"
-        "0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf",
-        "crossorigin": "anonymous",
-    },
+    dbc.icons.BOOTSTRAP,
+    dbc.icons.FONT_AWESOME,
 ]
 
 app = DashProxy(
-    __name__,
     external_stylesheets=external_stylesheets,
     transforms=[MultiplexerTransform()],
 )
@@ -300,7 +288,7 @@ def build_run_btn():
                 id="run-scheduler",
                 n_clicks=0,
                 color="danger",
-                className="fa fa-rocket me-1",
+                className="fa-solid fa-rocket fa-sm",
             )
         ],
         style={"float": "right", "padding": "10px"},
@@ -351,7 +339,7 @@ def build_metrics_board():
 
 def build_sched_output():
     return html.Div(
-        id="all-ouput",
+        id="all-output",
         children=[
             build_metrics_board(),
             build_text_output(),
@@ -367,9 +355,7 @@ def build_user_dp():
             dcc.Dropdown(id="user-dropdown", style={"color": "white"}),
         ],
         style={
-            # "width": "20%",
             "padding": "10px 10px 10px 10px",
-            # "display": "inline-block",
         },
     )
 
@@ -377,48 +363,41 @@ def build_user_dp():
 def build_control_buttons():
     return html.Div(
         children=[
-            html.Div(children=[html.H3("Controls")]),
+            html.H3("View Stages of Perfomed Scheduling"),
             html.Div(
                 children=[
+                    dcc.Interval(id="control-timer", interval=1000, disabled=True),
                     html.A(
-                        html.Button(children="Start"),
-                        href="https://plotly.com/get-demo/",
-                        style={"padding": "2px"},
-                    ),
-                    html.A(
-                        html.Button(children="Stop"),
-                        href="https://plotly.com/get-demo/",
-                        style={"padding": "2px"},
-                    ),
-                    html.A(
-                        html.Button(children="Pause"),
-                        href="https://plotly.com/get-demo/",
-                        style={"padding": "2px"},
-                    ),
-                    html.A(
-                        html.Button(children="Replay"),
-                        href="https://plotly.com/get-demo/",
-                        style={"padding": "2px"},
-                    ),
-                    html.A(
-                        html.Button(children="Save"),
-                        href="https://plotly.com/get-demo/",
-                        style={"padding": "2px"},
-                    ),
-                    html.Div(
-                        html.Button(
-                            id="learn-more-button",
-                            children="More Options",
+                        dbc.Button(
+                            id="decrease-time",
                             n_clicks=0,
+                            color="warning",
+                            className="fa-solid fa-backward",
                         ),
-                        style={"padding": "5px 0px"},
+                        style={"padding": "2px"},
                     ),
-                    html.Div(
-                        children=[
-                            html.H4("View Stages of Perfomed Scheduling"),
-                            html.Button(id="decrease-time", n_clicks=0, children="<<"),
-                            html.Button(id="increase-time", n_clicks=0, children=">>"),
-                        ]
+                    html.A(
+                        dbc.Button(
+                            id="play-pause-btn",
+                            color="primary",
+                            className="fa-solid fa-play",
+                        ),
+                        style={"padding": "2px"},
+                    ),
+                    html.A(
+                        dbc.Button(
+                            id="increase-time",
+                            n_clicks=0,
+                            color="warning",
+                            className="fa-solid fa-forward",
+                        ),
+                        style={"padding": "2px"},
+                    ),
+                    html.A(
+                        dbc.Button(
+                            id="stop", color="danger", className="fa-solid fa-stop"
+                        ),
+                        style={"padding": "2px"},
                     ),
                 ]
             ),
@@ -430,6 +409,40 @@ def build_control_buttons():
             # "display": "inline-block",
         },
     )
+
+
+@app.callback(
+    Output("control-timer", "disabled"),
+    Input("play-pause-btn", "n_clicks"),
+    State("control-timer", "disabled"),
+    prevent_initial_call=True,
+)
+def handle_play_pause_btn(n_clicks, disabled):
+    return not disabled
+
+
+@app.callback(
+    Output("control-timer", "disabled"),
+    Output("scheduling-times-dropdown", "value"),
+    Input("stop", "n_clicks"),
+    State("scheduling-times-dropdown", "options"),
+    prevent_initial_call=True,
+)
+def handle_stop_btn(n_clicks, times):
+    return True, times[0]["value"]
+
+
+@app.callback(
+    Output("scheduling-times-dropdown", "value"),
+    Input("control-timer", "n_intervals"),
+    State("scheduling-times-dropdown", "options"),
+    State("scheduling-times-dropdown", "value"),
+    prevent_initial_call=True,
+)
+def handle_animation_timer(n_intervals, times, time):
+    values = [t["value"] for t in times]
+    index = values.index(time)
+    return values[(index + 1) % len(times)]
 
 
 def build_control_panel():
@@ -869,20 +882,6 @@ def render_metrics_table(time):
     df = get_metrics_table(SCHEDULER, time)
 
     return df.to_dict("records"), [{"name": i, "id": i} for i in df.columns]
-
-
-@app.callback(
-    Output("scheduling-user-metrics", "children"),
-    Input("scheduling-times-dropdown", "value"),
-    prevent_initial_call=True,
-)
-def render_state_from_scheduler_history_per_user(time):
-    if SCHEDULER is None:
-        return None
-    users = SCHEDULER.getUsers()
-    metrics_t = SCHEDULER.get_history_metrics_at_t(time)  # returns a dictionary
-
-    return render_user_metrics(SCHEDULER.cluster, metrics_t, users, SCHEDULER.dags)
 
 
 @app.callback(
