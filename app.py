@@ -7,7 +7,6 @@ from src.scheduling import (
 )
 from src.scheduling_ui import (
     get_scheduling_output,
-    render_global_metrics,
     render_scheduling_messages,
     generate_section_banner,
 )
@@ -494,30 +493,6 @@ def build_tabs():
     )
 
 
-def build_final_stats_boards():
-    return html.Div(
-        id="fsb",
-        className="fsb",
-        children=[
-            html.Div(
-                id="fsb-text",
-                children=[
-                    html.H5("FInal Summary of Scheduling Run"),
-                ],
-            ),
-            html.Div(
-                id="fsb-logo",
-                children=[
-                    html.A(
-                        html.Button(children="Save"),
-                        href="https://plotly.com/get-demo/",
-                    ),
-                ],
-            ),
-        ],
-    )
-
-
 """Statistic Metrics"""
 
 
@@ -779,12 +754,48 @@ def build_running_stats_board():
                                 href="https://plotly.com/get-demo/",
                             ),
                         ],
-                        style={"float": "right"},
+                        style={"float": "center"},
                     ),
                 ],
             ),
         ],
     )
+
+
+def render_global_metrics(cluster, metrics_t):
+
+    # queing_time = f"Queing_time:  {metrics_t.get_queuing_time()}"
+    completion_time = str(metrics_t.get_jct())
+    makespan = str(metrics_t.get_makespan())
+    if completion_time == "nan":
+        print("came here nan")
+        completion_time = -1.0
+
+    elif completion_time == "inf":
+        print("came here inf")
+        completion_time = 9999.0
+    else:
+        completion_time = metrics_t.get_jct()
+
+    if makespan == "nan":
+        print("came here nan 2")
+        makespan = -1.0
+
+    elif makespan == "inf":
+        print("came here inf")
+        makespan = 9999.0
+    else:
+        makespan = metrics_t.get_makespan()
+
+    return [
+        # html.H4(" GLobal Metrics"),
+        generate_ledbox2("Queing Time", metrics_t.get_queuing_time()),
+        generate_ledbox2("Job Completion Time", completion_time),
+        generate_ledbox2("DAG make-span", makespan),
+        html.P(
+            "*Value Conventioins: inf = 9999 and nan = -1 ", style={"font-size": "8px"}
+        ),
+    ]
 
 
 """ Stats Logic Ends"""
