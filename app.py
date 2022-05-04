@@ -180,6 +180,15 @@ def build_banner():
                 children=[
                     html.H5("DAG Scheduling Visualization"),
                     html.H6("BDML Project: Spring 2022"),
+                    html.Div(
+                        children=[
+                            html.A(
+                                html.Button(children="Open ReadMe File"),
+                                href="https://github.com/lmeninato/dagsched/blob/master/README.md",
+                            ),
+                        ],
+                        style={"float": "center"},
+                    ),
                 ],
             ),
         ],
@@ -768,21 +777,21 @@ def render_global_metrics(cluster, metrics_t):
     completion_time = str(metrics_t.get_jct())
     makespan = str(metrics_t.get_makespan())
     if completion_time == "nan":
-        print("came here nan")
+        # print("came here nan")
         completion_time = -1.0
 
     elif completion_time == "inf":
-        print("came here inf")
+        # print("came here inf")
         completion_time = 9999.0
     else:
         completion_time = metrics_t.get_jct()
 
     if makespan == "nan":
-        print("came here nan 2")
+        # print("came here nan 2")
         makespan = -1.0
 
     elif makespan == "inf":
-        print("came here inf")
+        # print("came here inf")
         makespan = 9999.0
     else:
         makespan = metrics_t.get_makespan()
