@@ -9,6 +9,15 @@ import logging
 
 
 class SchedulerHistory:
+    """
+    Store history of scheduler.
+
+    Given a time, the scheduler history will store a deepcopy of all scheduling state
+    like the dags, utilization, messages, etc.
+
+    Not performant for large scheduling problems.
+    """
+
     def __init__(self) -> None:
         # time -> list of messages at time t
         self.messages = {}
@@ -50,6 +59,18 @@ class SchedulerHistory:
 class Scheduler:
     """
     Base Scheduler Class
+
+    Derived classes must overried the perform_scheduling_round method.
+
+    Scheduling simulation must perform discrete-event simulation.
+    See the next_*_time* functions to see how to sift through ready/running/blocked/etc.
+    tasks to determine the next discrete scheduling time.
+
+    Preemption is also possible via the preempt_task* functions
+
+    Classes can use the logged_message method to log a string and then append it to the
+    messages field. This can then be accessed in the front-end via the
+    scheduler history class.
     """
 
     def __init__(self, cluster, dags, users, deserialize=True):
