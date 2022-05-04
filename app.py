@@ -184,7 +184,7 @@ def build_banner():
                         children=[
                             html.A(
                                 html.Button(children="Open ReadMe File"),
-                                href="https://github.com/lmeninato/dagsched/blob/master/README.md",
+                                href="https://github.com/lmeninato/dagsched/blob/master/README.md",  # noqa
                             ),
                         ],
                         style={"float": "center"},
