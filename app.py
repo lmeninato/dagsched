@@ -428,13 +428,14 @@ def handle_play_pause_btn(n_clicks, disabled):
 
 @app.callback(
     Output("control-timer", "disabled"),
+    Output("play-pause-btn", "className"),
     Output("scheduling-times-dropdown", "value"),
     Input("stop", "n_clicks"),
     State("scheduling-times-dropdown", "options"),
     prevent_initial_call=True,
 )
 def handle_stop_btn(n_clicks, times):
-    return True, times[0]["value"]
+    return True, "fa-solid fa-play", times[0]["value"]
 
 
 @app.callback(
@@ -768,21 +769,17 @@ def render_global_metrics(cluster, metrics_t):
     completion_time = str(metrics_t.get_jct())
     makespan = str(metrics_t.get_makespan())
     if completion_time == "nan":
-        print("came here nan")
         completion_time = -1.0
 
     elif completion_time == "inf":
-        print("came here inf")
         completion_time = 9999.0
     else:
         completion_time = metrics_t.get_jct()
 
     if makespan == "nan":
-        print("came here nan 2")
         makespan = -1.0
 
     elif makespan == "inf":
-        print("came here inf")
         makespan = 9999.0
     else:
         makespan = metrics_t.get_makespan()

@@ -1,6 +1,8 @@
-# DAG Scheduling Visualization
+# DAGSched
 
-# Input File
+In the input panel, please upload an input file (or one of the sample ones), then move to the second panel where you can select scheduling policies. After this is done simply click the run button and you will be able to view the scheduling results. With the control buttons (pause/play/stop/backwards/forwards) you can animate the state of the scheduler (this will also adjust the scheduling output like avg. job completion time and so forth).
+
+## Input File
 
 Below we have a sample input file (`./data/simple_dag.yml`):
 
@@ -58,9 +60,6 @@ users:
         dependencies: [task_4]
 ```
 
-# DAGSched
-
-In the input panel, please upload an input file (or one of the sample ones), then move to the second panel where you can select scheduling policies. After this is done simply click the run button and you will be able to view the scheduling results. With the control buttons (pause/play/stop/backwards/forwards) you can animate the state of the scheduler (this will also adjust the scheduling output like avg. job completion time and so forth).
 
 # Development
 
