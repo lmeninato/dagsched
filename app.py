@@ -413,12 +413,18 @@ def build_control_buttons():
 
 @app.callback(
     Output("control-timer", "disabled"),
+    Output("play-pause-btn", "className"),
     Input("play-pause-btn", "n_clicks"),
     State("control-timer", "disabled"),
     prevent_initial_call=True,
 )
 def handle_play_pause_btn(n_clicks, disabled):
-    return not disabled
+    if not disabled:
+        btn_class = "fa-solid fa-play"
+    else:
+        btn_class = "fa-solid fa-pause"
+
+    return not disabled, btn_class
 
 
 @app.callback(
@@ -747,42 +753,6 @@ def render_utilization(cluster, utilization):
         generate_ledbox("RAM utilization (%)", ramusgperc),
         # html.P(ram_usage),
     ]
-
-
-# def render_global_metrics(cluster, metrics_t):
-
-#     # queing_time = f"Queing_time:  {metrics_t.get_queuing_time()}"
-#     completion_time = str(metrics_t.get_jct())
-#     makespan = str(metrics_t.get_makespan())
-#     if completion_time == "nan":
-#         print("came here nan")
-#         completion_time = -1.0
-
-#     elif completion_time == "inf":
-#         print("came here inf")
-#         completion_time = 9999.0
-#     else:
-#         completion_time = metrics_t.get_jct()
-
-#     if makespan == "nan":
-#         print("came here nan 2")
-#         makespan = -1.0
-
-#     elif makespan == "inf":
-#         print("came here inf")
-#         makespan = 9999.0
-#     else:
-#         makespan = metrics_t.get_makespan()
-
-#     return [
-#         # html.H4(" GLobal Metrics"),
-#         generate_ledbox2("Queing Time", metrics_t.get_queuing_time()),
-#         generate_ledbox2("Job Completion Time", completion_time),
-#         generate_ledbox2("DAG make-span", makespan),
-#         # html.P(queing_time),
-#         # html.P(completion_time),
-#         # html.P(makespan),
-#     ]
 
 
 def build_running_stats_board():

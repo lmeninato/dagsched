@@ -84,11 +84,10 @@ def generate_piechart():
 
 def render_global_metrics(cluster, metrics_t):
 
-    queing_time = f"Queing_time:  {metrics_t.get_queuing_time()} "
+    queing_time = f"Queuing_time:  {metrics_t.get_queuing_time()} "
     completion_time = f"Job Completion Time: {metrics_t.get_jct()} "
-    makespan = f"Make-span of DAG: {metrics_t.get_makespan()} "
+    makespan = f"Makespan of DAG: {metrics_t.get_makespan()} "
     return [
-        # html.H4("Metrics"),
         html.P(queing_time),
         html.P(completion_time),
         html.P(makespan),

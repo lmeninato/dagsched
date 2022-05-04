@@ -4,11 +4,11 @@ from enum import Enum
 
 
 class TaskStatus(Enum):
-    READY = 0
-    FINISHED = 1
-    BLOCKED = 2
-    RUNNING = 3
-    PREEMPTED = 4
+    READY = 1
+    FINISHED = 2
+    BLOCKED = 3
+    RUNNING = 4
+    PREEMPTED = 5
 
 
 @dataclass
