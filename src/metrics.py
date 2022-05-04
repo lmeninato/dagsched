@@ -3,6 +3,16 @@ from collections import defaultdict
 
 
 class SchedulingMetrics:
+    """
+    Store information to compute any desired scheduling metrics
+
+    We store information on arrival times, preemptions, job
+    completion times, and job queuing times.
+
+    We provide additional helper functions to compute queries
+    on that set of information.
+    """
+
     def __init__(self, dags):
         # for each user, store the arrival time
         self.arrivals = {}

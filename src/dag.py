@@ -13,6 +13,13 @@ class TaskStatus(Enum):
 
 @dataclass
 class Task:
+    """
+    Needs to be serializable to JSON to be useable in dash and cytoscape
+
+    status is tracked by TaskStatus enum
+    properties that are available in the front-end must be stored in the props dict
+    """
+
     required = ["label", "duration"]
     optional = {"cpus": 1, "ram": 1}
     status = None
@@ -64,6 +71,14 @@ class Task:
 
 @dataclass
 class DAG:
+    """
+    Must be JSON serializable to be accessible in Dash state
+
+    Stores metadata about DAG (e.g. name of user, arrival time, nodes and edges)
+
+    render_state method returns nodes and edges in cytoscape js format
+    """
+
     layout = None
 
     def __init__(self, dag, deserialize=False):

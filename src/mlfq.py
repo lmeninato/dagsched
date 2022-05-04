@@ -8,6 +8,18 @@ class MultiLevelFeedbackQueue:
     This either functions as a multi level feedback queue OR
     as a stable priority queue (see its usage in the non preemptive
     priority scheduler)
+
+    example:
+    mlfq = MultiLevelFeedbackQueue()
+    mlfq.put("a", 1)
+    mlfq.put("b", 1)
+    mlfq.put("c", 2)
+
+    mlfq.get() # returns "c"
+    mlfq.get() # returns "a" ("a" was inserted before "b")
+    mlfq.get() # returns "b"
+    mlfq.get() # raises ValueError exception (cant get from empty queue)
+
     """
 
     def __init__(self) -> None:
