@@ -503,9 +503,9 @@ class PreemptivePriorityScheduler(PriorityScheduler):
 
 
 def compute_service_size(task):
-    cpus, ram = task.props["cpus"], task.props["ram"]
+    cpus, ram, duration = task.props["cpus"], task.props["ram"], task.props["duration"]
 
-    return -cpus * ram
+    return -cpus * ram * duration
 
 
 class SmallestServiceFirst(PriorityScheduler):
