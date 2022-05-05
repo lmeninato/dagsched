@@ -368,10 +368,19 @@ def build_user_dp():
     )
 
 
-def build_control_buttons():
+@app.callback(
+    Output("control-buttons", "children"),
+    Input("session-running", "modified_timestamp"),
+    State("session-running", "data"),
+    prevent_initial_call=True,
+)
+def build_control_buttons(timestamp, scheduler_finished):
+    if not scheduler_finished:
+        return html.H4("Please Run a Scheduling Policy")
+
     return html.Div(
         children=[
-            html.H3("View Stages of Perfomed Scheduling"),
+            html.H3("View Stages of Performed Scheduling"),
             html.Div(
                 children=[
                     dcc.Interval(id="control-timer", interval=1000, disabled=True),
@@ -388,6 +397,7 @@ def build_control_buttons():
                         dbc.Button(
                             id="play-pause-btn",
                             color="primary",
+                            n_clicks=0,
                             className="fa-solid fa-play",
                         ),
                         style={"padding": "2px"},
@@ -427,6 +437,8 @@ def build_control_buttons():
     prevent_initial_call=True,
 )
 def handle_play_pause_btn(n_clicks, disabled):
+    if not n_clicks:
+        raise PreventUpdate
     if not disabled:
         btn_class = "fa-solid fa-play"
     else:
@@ -467,7 +479,9 @@ def build_control_panel():
                 id="drop-downs",
                 children=[build_user_dp(), build_sched_dp()],
             ),
-            build_control_buttons(),
+            html.Div(
+                id="control-buttons",
+            ),
             build_state_legend(),
         ],
         style={
@@ -752,19 +766,10 @@ def build_running_stats_board():
                 ],
             ),
             html.Div(
-                id="rsb-logo",  # save local and global stats with a single button
+                id="rsb-logo",
                 children=[
                     build_top_panel(1),
                     html.Div(id="scheduling-user-metrics"),
-                    html.Div(
-                        children=[
-                            html.A(
-                                html.Button(children="Save"),
-                                href="https://plotly.com/get-demo/",
-                            ),
-                        ],
-                        style={"float": "center"},
-                    ),
                 ],
             ),
         ],
@@ -816,6 +821,7 @@ app.layout = html.Div(
         dcc.Store(id="session-cluster", storage_type="session"),
         dcc.Store(id="session-dags", storage_type="session"),
         dcc.Store(id="session-users", storage_type="session"),
+        dcc.Store(id="session-running", storage_type="session"),
         build_banner(),
         build_tabs(),
     ]
@@ -824,6 +830,7 @@ app.layout = html.Div(
 
 @app.callback(
     Output("scheduling-output", "children"),
+    Output("session-running", "data"),
     Input("run-scheduler", "n_clicks"),
     [State("scheduler-dropdown", "value")],
     State("session-dags", "data"),
@@ -856,7 +863,7 @@ def perform_scheduling(n_clicks, scheduler_type, dags, users, cluster):
     except Exception:
         SCHEDULER = None
 
-    return get_scheduling_output(SCHEDULER)
+    return get_scheduling_output(SCHEDULER), True
 
 
 @app.callback(
